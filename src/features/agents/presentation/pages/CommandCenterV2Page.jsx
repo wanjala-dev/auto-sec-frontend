@@ -59,6 +59,9 @@ import CalloutLine from '../../../../components/V2/CalloutLine';
 import { motion, AnimatePresence } from 'framer-motion';
 import { unifiedDocumentsApi } from '../../../../infrastructure/documentImport/unifiedDocumentsApi';
 import { receiptsApi } from '../../../../infrastructure/receipts/receiptsApi';
+import { agentsApi } from '../../../../infrastructure/agents/agentsApi';
+import HudCheckbox from '../../../../components/V2/HudCheckbox';
+import { toast } from 'react-toastify';
 import '../../../../components/V2/HudToast.css';
 import { useViewerSession } from '../../../auth/presentation/useViewerSession';
 import {
@@ -1064,6 +1067,38 @@ const CommandCenterV2 = () => {
       resolveStoredSummaryWorkspaceId(readViewerStoredUserSummary())
   );
   const agentCtx = useAgentContext() || {};
+  // Stable reference for hooks below — agentCtx itself is re-created by the
+  // `|| {}` fallback, but the sessions array comes from context state.
+  const activeAgentSessions = agentCtx?.activeSessions;
+  // Risk-gated capability toggles (agent hex panel). Local overrides keyed by
+  // agent id so a PATCHed toggle reflects immediately without an agents refetch.
+  const [agentCapOverrides, setAgentCapOverrides] = useState({});
+  const [capSavingAgentId, setCapSavingAgentId] = useState(null);
+  const toggleDraftPrCapability = useCallback(async (agentId, next) => {
+    setCapSavingAgentId(agentId);
+    try {
+      const r = await agentsApi.updateCapabilities(agentId, {
+        open_draft_pr: next
+      });
+      const caps = r?.data?.capabilities || { open_draft_pr: next };
+      setAgentCapOverrides((prev) => ({ ...prev, [agentId]: caps }));
+      toast.success(
+        next
+          ? 'Draft-PR capability enabled — the agent may open draft fix PRs'
+          : 'Draft-PR capability disabled',
+        { icon: next ? '✅' : '🔒' }
+      );
+    } catch (e) {
+      toast.error(
+        e?.response?.data?.error ||
+          e?.response?.data?.message ||
+          'Unable to update capability',
+        { icon: '⚠️' }
+      );
+    } finally {
+      setCapSavingAgentId(null);
+    }
+  }, []);
   const { tasks: kanbanTasks = [], fetchColumns } = useKanbanBoardContext() || {};
   const { logout } = useAuthContext() || {};
   const { storedUser } = useViewerSession();
@@ -1687,6 +1722,15 @@ const CommandCenterV2 = () => {
       if (context === 'ai') {
         const agent = contextHexNodes.find((a) => a.id === nodeId);
         if (agent) {
+          // Real backing agent (vs demo hex) — only real agents can carry
+          // risk-gated capability toggles (the PATCH needs a real agent id).
+          const realAgent = (activeAgentSessions || []).find(
+            (s) => s?.sessionKind === 'agent' && String(s?.id) === String(nodeId)
+          );
+          const agentCaps =
+            (realAgent && agentCapOverrides[realAgent.id]) ||
+            realAgent?.sessionData?.config?.capabilities ||
+            {};
           return (
             <div className="space-y-2 p-1">
               <div className="flex items-center gap-2 mb-2">
@@ -1710,6 +1754,34 @@ const CommandCenterV2 = () => {
                 v={agent.status?.toUpperCase()}
                 c={STATUS_COLORS[agent.status]}
               />
+              {/* Risk-gated capabilities — Draft PRs unlocks the triage
+                  agent's open_draft_pr tool (draft GitHub PRs for grounded
+                  fixes). Only rendered for real agents. */}
+              {realAgent && (
+                <div className="mt-2 flex items-center justify-between gap-2 border-t border-hud-line/10 pt-2">
+                  <div>
+                    <p className="text-[9px] font-mono text-hud-text">
+                      DRAFT PRS
+                    </p>
+                    <p className="text-[7px] font-mono text-hud-dim">
+                      Agent may open draft fix PRs on GitHub
+                    </p>
+                  </div>
+                  <HudCheckbox
+                    checked={agentCaps.open_draft_pr === true}
+                    disabled={capSavingAgentId === realAgent.id}
+                    size={15}
+                    title={
+                      agentCaps.open_draft_pr
+                        ? 'Enabled — click to disable'
+                        : 'Disabled — click to enable'
+                    }
+                    onChange={(next) =>
+                      toggleDraftPrCapability(realAgent.id, next)
+                    }
+                  />
+                </div>
+              )}
               {panelRoutes[panelId] && (
                 <button
                   type="button"
@@ -1785,7 +1857,17 @@ const CommandCenterV2 = () => {
         />
       );
     },
-    [contextHexNodes, panelRoutes, navigate, logErrorRecords, alertFindings]
+    [
+      contextHexNodes,
+      panelRoutes,
+      navigate,
+      logErrorRecords,
+      alertFindings,
+      activeAgentSessions,
+      agentCapOverrides,
+      capSavingAgentId,
+      toggleDraftPrCapability
+    ]
   );
 
   return (

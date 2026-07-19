@@ -13,7 +13,9 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { toast } from 'react-toastify';
 
+import apiClient from '../../../infrastructure/http/apiClient';
 import HudText from '../HudText';
 import HexLoader from '../HexLoader';
 import HudCard from '../HudCard';
@@ -114,8 +116,9 @@ function AssigneeStack({ assignees }) {
 }
 
 /* ── One task card — HUD chrome, dnd-sortable. Satisfies the shared kanban
-   drag hook's contract: data.type === 'Task', data.column === owning column. ── */
-function HudTaskCard({ task, columnId, accent, dragging }) {
+   drag hook's contract: data.type === 'Task', data.column === owning column.
+   `workspaceId` powers the draft-PR approve call on eligible findings. ── */
+function HudTaskCard({ task, columnId, accent, dragging, workspaceId }) {
   const sortableId = getTaskSortableId(task, columnId);
   const {
     setNodeRef,
@@ -137,6 +140,56 @@ function HudTaskCard({ task, columnId, accent, dragging }) {
   const isOpt = !!(lw && lw.kind && lw.kind !== 'error');
   const prov = task?.provenance || null;
   const [expanded, setExpanded] = useState(false);
+  // Draft-PR affordance (rung-1 HITL): a triaged, grounded finding can be
+  // approved into a draft GitHub PR. `openedPr` holds the PR returned by the
+  // approve call so the chip swaps in without a board refetch.
+  const [openingPr, setOpeningPr] = useState(false);
+  const [openedPr, setOpenedPr] = useState(null);
+  const draftPr = openedPr || lw?.draft_pr || null;
+  const canOpenPr = !!(
+    lw &&
+    lw.triage_status === 'triaged' &&
+    !lw.needs_human &&
+    !draftPr &&
+    workspaceId
+  );
+
+  const handleOpenDraftPr = useCallback(
+    async (e) => {
+      e.stopPropagation();
+      if (openingPr) return;
+      const taskId = task?.pk ?? task?.id ?? task?.task_id;
+      if (!taskId || !workspaceId) return;
+      setOpeningPr(true);
+      try {
+        const r = await apiClient.post(
+          `/integrations/workspaces/${workspaceId}/findings/${taskId}/open-draft-pr/`
+        );
+        const pr = r?.data?.data || null;
+        if (pr?.url) {
+          setOpenedPr(pr);
+          toast.success(
+            pr.created
+              ? `Draft PR opened on ${pr.repo}`
+              : 'Draft PR already open — showing the existing one',
+            { icon: '✅' }
+          );
+        }
+      } catch (err) {
+        // The endpoint returns typed, actionable reasons (capability_disabled,
+        // needs_human, repo_not_allowlisted, no_connection, …) — surface them.
+        const reason = err?.response?.data?.reason;
+        const detail = err?.response?.data?.error;
+        toast.error(
+          `${detail || 'Unable to open draft PR'}${reason ? ` [${reason}]` : ''}`,
+          { icon: '⚠️' }
+        );
+      } finally {
+        setOpeningPr(false);
+      }
+    },
+    [openingPr, task, workspaceId]
+  );
   const style = {
     transform: CSS.Transform.toString(transform),
     transition
@@ -197,11 +250,28 @@ function HudTaskCard({ task, columnId, accent, dragging }) {
       </div>
       {/* Grounded-verifier flag: the agent's suggestion couldn't be grounded in
           the finding's evidence, so it was downgraded and needs a human eye. */}
-      {lw?.needs_human && (
-        <div className="mb-1">
-          <span className="inline-flex items-center gap-1 border border-amber-400/50 bg-amber-400/10 px-1.5 py-0.5 text-[7px] font-mono font-bold tracking-wider text-amber-300">
-            ⚠ NEEDS HUMAN
-          </span>
+      {(lw?.needs_human || draftPr?.url) && (
+        <div className="mb-1 flex flex-wrap items-center gap-1">
+          {lw?.needs_human && (
+            <span className="inline-flex items-center gap-1 border border-amber-400/50 bg-amber-400/10 px-1.5 py-0.5 text-[7px] font-mono font-bold tracking-wider text-amber-300">
+              ⚠ NEEDS HUMAN
+            </span>
+          )}
+          {/* Draft-PR chip — the finding's grounded fix is waiting as a draft
+              PR. Pointer-down is stopped so clicking never starts a drag. */}
+          {draftPr?.url && (
+            <a
+              href={draftPr.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              title={[draftPr.repo, draftPr.branch].filter(Boolean).join(' · ')}
+              className="inline-flex items-center gap-1 border border-hud-accent/50 bg-cyan-500/10 px-1.5 py-0.5 text-[7px] font-mono font-bold tracking-wider text-hud-accent transition hover:bg-cyan-500/20"
+            >
+              DRAFT PR ↗
+            </a>
+          )}
         </div>
       )}
       <div className="flex items-center justify-between">
@@ -305,6 +375,21 @@ function HudTaskCard({ task, columnId, accent, dragging }) {
                   )}
                 </div>
               )}
+              {/* Rung-1 HITL approve — a triaged, grounded finding can be
+                  turned into a draft GitHub PR with one click. Hidden once a
+                  PR exists (the chip takes over) or when the fix is flagged
+                  needs_human. */}
+              {canOpenPr && (
+                <button
+                  type="button"
+                  disabled={openingPr}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={handleOpenDraftPr}
+                  className="w-full border border-hud-accent/40 bg-hud-accent/[0.08] px-2 py-1 font-mono text-[7px] font-bold tracking-wider text-hud-accent transition hover:bg-hud-accent/[0.15] disabled:cursor-wait disabled:opacity-50"
+                >
+                  {openingPr ? 'OPENING DRAFT PR…' : 'OPEN DRAFT PR'}
+                </button>
+              )}
               {/* Awaiting-agent hint when the specialist hasn't run yet */}
               {!lw.suggested_fix && !lw.recommendation && lw.triage_status === 'pending' && (
                 <p className="text-[7px] font-mono italic text-hud-dim/70">
@@ -350,7 +435,7 @@ function HudTaskCard({ task, columnId, accent, dragging }) {
 }
 
 /* ── One lane (column) — HUD panel, droppable, holds a SortableContext. ── */
-function HudLane({ column, index, tasks, onAddTask }) {
+function HudLane({ column, index, tasks, onAddTask, workspaceId }) {
   const accent = laneAccent(index);
   const columnTasks = useMemo(
     () =>
@@ -424,6 +509,7 @@ function HudLane({ column, index, tasks, onAddTask }) {
               task={task}
               columnId={column.id}
               accent={accent}
+              workspaceId={workspaceId}
             />
           ))}
         </SortableContext>
@@ -731,6 +817,7 @@ export default function HudKanbanBoard({ seedId }) {
               column={column}
               index={i}
               tasks={tasks}
+              workspaceId={resolvedSeedId}
               onAddTask={
                 // Default (placeholder) lanes have string ids like "__todo"
                 // and no backing row, so they can't accept a task yet.

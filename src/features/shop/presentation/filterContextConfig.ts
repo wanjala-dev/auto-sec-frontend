@@ -1,0 +1,26 @@
+import {
+  FILTER_PRICE,
+  FILTER_RATING,
+  FILTER_CONDITION,
+  FILTER_PRICE_AND_RATING,
+  FILTER_PRICE_AND_CONDITION,
+  FILTER_RATING_AND_CONDITION,
+  FILTER_ALL,
+  RESET_FILTER
+} from '../../../types/filterTypes';
+
+export const filterInitialState = {
+  products: [],
+  loading: true
+};
+
+export const filterActions = {
+  FILTER_PRICE,
+  FILTER_RATING,
+  FILTER_CONDITION,
+  FILTER_PRICE_AND_RATING,
+  FILTER_PRICE_AND_CONDITION,
+  FILTER_RATING_AND_CONDITION,
+  FILTER_ALL,
+  RESET_FILTER
+};

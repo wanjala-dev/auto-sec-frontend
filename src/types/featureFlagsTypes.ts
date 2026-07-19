@@ -1,0 +1,25 @@
+export const FEATURE_FLAGS_INIT = 'FEATURE_FLAGS_INIT';
+export const FEATURE_FLAGS_SET_OVERRIDE = 'FEATURE_FLAGS_SET_OVERRIDE';
+export const FEATURE_FLAGS_CLEAR_OVERRIDES = 'FEATURE_FLAGS_CLEAR_OVERRIDES';
+export const FEATURE_FLAGS_ERROR = 'FEATURE_FLAGS_ERROR';
+
+export const FEATURE_FLAGS_EVALUATED_LOADING =
+  'FEATURE_FLAGS_EVALUATED_LOADING';
+export const FEATURE_FLAGS_EVALUATED_SUCCESS =
+  'FEATURE_FLAGS_EVALUATED_SUCCESS';
+export const FEATURE_FLAGS_EVALUATED_ERROR = 'FEATURE_FLAGS_EVALUATED_ERROR';
+// Sets the workspace that flag reads (isFlagEnabled/flags/flagsReady) resolve
+// against — the workspace the user is currently VIEWING (URL), which is not
+// necessarily their persisted active_workspace_id. Driven by WorkspaceLayout.
+export const FEATURE_FLAGS_SET_CURRENT_WORKSPACE =
+  'FEATURE_FLAGS_SET_CURRENT_WORKSPACE';
+
+export type FeatureFlagsActionType =
+  | typeof FEATURE_FLAGS_INIT
+  | typeof FEATURE_FLAGS_SET_OVERRIDE
+  | typeof FEATURE_FLAGS_CLEAR_OVERRIDES
+  | typeof FEATURE_FLAGS_ERROR
+  | typeof FEATURE_FLAGS_EVALUATED_LOADING
+  | typeof FEATURE_FLAGS_EVALUATED_SUCCESS
+  | typeof FEATURE_FLAGS_EVALUATED_ERROR
+  | typeof FEATURE_FLAGS_SET_CURRENT_WORKSPACE;

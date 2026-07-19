@@ -1,0 +1,1209 @@
+/* =====================================================================
+   Design token contract — the semantic theming layer (Phase 1).
+   Single source of truth for per-workspace + dark-mode theming.
+
+   - Colors are stored as raw "R G B" channels so Tailwind can apply
+     alpha via `rgb(var(--token) / <alpha-value>)` (see tailwind.config.js).
+   - `:root` = the Octopus default (light); `html.dark` overrides for
+     dark mode. Per-workspace brands override --primary/--secondary/
+     --tertiary at runtime (Phase 3) — components never hardcode brand hex.
+   - Brand tokens are seed-derived per workspace; STATE tokens
+     (--success/--warning/--destructive) are fixed and NOT
+     workspace-overridable (a workspace can't make "error" green).
+   Design: docs/plans/WORKSPACE_THEMING_DESIGN_2026-07-09.md
+   ===================================================================== */
+:root {
+  /* Surfaces + text */
+  --background: 255 255 255;
+  --foreground: 55 69 87; /* #374557 */
+  --card: 255 255 255;
+  --card-foreground: 30 41 59; /* #1E293B */
+  --popover: 255 255 255;
+  --popover-foreground: 55 69 87;
+  --muted: 243 244 246; /* #F3F4F6 */
+  --muted-foreground: 107 114 128; /* #6B7280 */
+
+  /* Brand — seed-derived per workspace (Octopus defaults here) */
+  --primary: 66 185 143; /* #42B98F */
+  --primary-foreground: 10 10 10; /* #0A0A0A — dark text; white fails WCAG on the green */
+  --secondary: 245 171 91; /* #F5AB5B */
+  --secondary-foreground: 55 69 87;
+  --tertiary: 247 132 7; /* #F78407 */
+  --accent: 245 171 91; /* #F5AB5B */
+  --accent-foreground: 55 69 87;
+
+  /* State — fixed, never workspace-overridable */
+  --success: 39 174 96; /* #27AE60 */
+  --warning: 242 153 74; /* #F2994A */
+  --destructive: 235 87 87; /* #EB5757 */
+  --destructive-foreground: 255 255 255;
+
+  /* Structural */
+  --border: 229 229 229; /* #E5E5E5 */
+  --input: 229 229 229;
+  --ring: 66 185 143; /* #42B98F */
+  --radius: 0.5rem;
+
+  /* Legacy seams — kept until Phase 2 consolidates onto the tokens above.
+     --color-muted (a hex, consumed directly by `thin-light-gray`) hits
+     4.77:1 on white (AA); its channel twin is --muted-foreground. */
+  --card-bg: #ffffff;
+  --card-text: #1e293b;
+  --color-muted: #6b7280;
+}
+html.dark {
+  --background: 29 31 47; /* #1D1F2F */
+  --foreground: 226 232 240; /* #E2E8F0 */
+  --card: 15 23 42; /* #0F172A */
+  --card-foreground: 226 232 240;
+  --popover: 29 31 47;
+  --popover-foreground: 226 232 240;
+  --muted: 30 34 51;
+  --muted-foreground: 154 163 177; /* #9AA3B1 */
+
+  --primary: 66 185 143;
+  --primary-foreground: 10 10 10; /* #0A0A0A — dark text; white fails WCAG on the green */
+  --secondary: 245 171 91;
+  --secondary-foreground: 55 69 87;
+  --tertiary: 247 132 7;
+  --accent: 245 171 91;
+  --accent-foreground: 55 69 87;
+
+  --success: 39 174 96;
+  --warning: 242 153 74;
+  --destructive: 235 87 87;
+  --destructive-foreground: 255 255 255;
+
+  --border: 51 54 80;
+  --input: 51 54 80;
+  --ring: 66 185 143;
+
+  --card-bg: #0f172a;
+  --card-text: #e2e8f0;
+  --color-muted: #9aa3b1;
+}
+
+/* =====================================================================
+   Auto-Sec HUD tokens — the neon command-center surface, themed
+   independently of the V1 app tokens above. Stored as raw "R G B"
+   channels so Tailwind arbitrary alpha (bg-hud-surface/70,
+   border-hud-line/30) keeps working across dark ⇄ light.
+
+   Default (:root) = the dark HUD. `.hud-light` = the "Daylight HUD"
+   (steel) palette — bright canvas, dark text, teal accent. The toggle
+   adds/removes `.hud-light` on the command-center root.
+   ===================================================================== */
+:root {
+  --hud-canvas: 4 18 37; /* #041225 page backdrop */
+  --hud-surface: 6 12 24; /* #060c18 panels / cards */
+  --hud-surface-2: 10 20 36; /* #0a1424 raised (avatars, inputs) */
+  --hud-text: 229 231 235; /* #e5e7eb primary text */
+  --hud-dim: 107 114 128; /* #6b7280 secondary / labels */
+  --hud-line: 46 219 232; /* cyan hairline base (used at low alpha) */
+  --hud-accent: 46 219 232; /* #2EDBE8 neon accent */
+}
+.hud-light {
+  --hud-canvas: 230 235 241; /* #e6ebf1 */
+  --hud-surface: 244 247 250; /* #f4f7fa */
+  --hud-surface-2: 232 238 244; /* #e8eef4 */
+  --hud-text: 28 39 51; /* #1c2733 */
+  --hud-dim: 100 116 139; /* #64748b */
+  --hud-line: 195 204 214; /* #c3ccd6 */
+  --hud-accent: 14 124 134; /* #0e7c86 readable teal on light */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.container-snap::-webkit-scrollbar,
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.container-snap,
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Prevent browser autofill from overriding background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: inherit !important;
+  transition: background-color 5000s ease-in-out 0s;
+  background-color: transparent !important;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active {
+  -webkit-text-fill-color: #fff !important;
+}
+
+/* Dark Mode Styles */
+
+.bg-dark {
+  background-color: #222;
+}
+
+.heading-dark {
+  color: #fff;
+}
+
+.btn-dark {
+  background-color: #fff;
+  color: #222;
+}
+
+.hide-scroll-bar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scroll-bar::-webkit-scrollbar {
+  display: none;
+}
+
+svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Floating-label effect for text-like inputs ONLY. Checkbox/radio inputs can
+   never be :placeholder-shown, so an unscoped `input:not(:placeholder-shown)`
+   ALWAYS matched them — silently applying scale(.75)/-translate-y to any
+   sibling <label>. That leaked onto every RadioSelectionCard (its markup is
+   `<input class="sr-only peer"> ~ <label>`), shrinking cards to 75% and lifting
+   them out of their clip box (Henry 2026-07-15). Excluding checkbox/radio at
+   the source fixes it platform-wide. */
+input:not([type='checkbox']):not([type='radio']):focus-within ~ label,
+input:not([type='checkbox']):not([type='radio']):not(:placeholder-shown) ~ label {
+  @apply transform scale-75 -translate-y-6;
+}
+
+input:not([type='checkbox']):not([type='radio']):focus-within ~ label {
+  @apply text-blue-500;
+}
+.outline input:not([type='checkbox']):not([type='radio']):focus-within ~ label,
+.outline
+  input:not([type='checkbox']):not([type='radio']):not(:placeholder-shown)
+  ~ label {
+  @apply transform scale-75 -translate-y-4 z-0 ml-3 px-1 py-0;
+}
+
+.toggle-bg:after {
+  content: '';
+  @apply absolute top-0.5 left-0.5 bg-white border border-gray-300 rounded-full h-5 w-5 transition shadow-sm;
+}
+
+input:checked + .toggle-bg:after {
+  transform: translateX(100%);
+  @apply border-white;
+}
+
+input:checked + .toggle-bg {
+  @apply bg-blue-600 border-blue-600;
+}
+
+.dark .toggle-bg:after {
+  @apply border-gray-500;
+}
+
+input:checked + .toggle-bg.toggle-bg--emerald {
+  @apply bg-emerald-500 border-emerald-500;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+table th,
+table td {
+  border: none;
+}
+
+
+
+
+.Update-table-dropdown :is(.text-sm) {
+  @apply text-base;
+}
+
+
+.update-table table tr:last-child {
+  border-bottom: none;
+}
+
+/*** iPhone and iOS Form Input Zoom Fixes ***/
+/* Fix Input Zoom on devices older than iPhone 5: */
+@media screen and (device-aspect-ratio: 2/3) {
+  select,
+  textarea,
+  input[type='text'],
+  input[type='password'],
+  input[type='datetime'],
+  input[type='datetime-local'],
+  input[type='date'],
+  input[type='month'],
+  input[type='time'],
+  input[type='week'],
+  input[type='number'],
+  input[type='email'],
+  input[type='url'] {
+    font-size: 16px;
+  }
+}
+
+/* Fix Input Zoom on iPhone 5, 5C, 5S, iPod Touch 5g */
+@media screen and (device-aspect-ratio: 40/71) {
+  select,
+  textarea,
+  input[type='text'],
+  input[type='password'],
+  input[type='datetime'],
+  input[type='datetime-local'],
+  input[type='date'],
+  input[type='month'],
+  input[type='time'],
+  input[type='week'],
+  input[type='number'],
+  input[type='email'],
+  input[type='url'] {
+    font-size: 16px;
+  }
+}
+
+/* Fix Input Zoom on iPhone 6, iPhone 6s, iPhone 7  */
+@media screen and (device-aspect-ratio: 375/667) {
+  select,
+  textarea,
+  input[type='text'],
+  input[type='password'],
+  input[type='datetime'],
+  input[type='datetime-local'],
+  input[type='date'],
+  input[type='month'],
+  input[type='time'],
+  input[type='week'],
+  input[type='number'],
+  input[type='email'],
+  input[type='tel'],
+  input[type='url'] {
+    font-size: 16px;
+  }
+}
+
+/* Fix Input Zoom on iPhone 6 Plus, iPhone 6s Plus, iPhone 7 Plus, iPhone 8, iPhone X, XS, XS Max  */
+@media screen and (device-aspect-ratio: 9/16) {
+  select,
+  textarea,
+  input[type='text'],
+  input[type='password'],
+  input[type='datetime'],
+  input[type='datetime-local'],
+  input[type='date'],
+  input[type='month'],
+  input[type='time'],
+  input[type='week'],
+  input[type='number'],
+  input[type='email'],
+  input[type='tel'],
+  input[type='url'] {
+    font-size: 16px;
+  }
+} /*** iPhone and iOS Form Input Zoom Fixes ***/
+/* Fix Input Zoom on devices older than iPhone 5: */
+@media screen and (device-aspect-ratio: 2/3) {
+  select,
+  textarea,
+  input[type='text'],
+  input[type='password'],
+  input[type='datetime'],
+  input[type='datetime-local'],
+  input[type='date'],
+  input[type='month'],
+  input[type='time'],
+  input[type='week'],
+  input[type='number'],
+  input[type='email'],
+  input[type='url'] {
+    font-size: 16px;
+  }
+}
+
+/* Fix Input Zoom on iPhone 5, 5C, 5S, iPod Touch 5g */
+@media screen and (device-aspect-ratio: 40/71) {
+  select,
+  textarea,
+  input[type='text'],
+  input[type='password'],
+  input[type='datetime'],
+  input[type='datetime-local'],
+  input[type='date'],
+  input[type='month'],
+  input[type='time'],
+  input[type='week'],
+  input[type='number'],
+  input[type='email'],
+  input[type='url'] {
+    font-size: 16px;
+  }
+}
+
+/* Fix Input Zoom on iPhone 6, iPhone 6s, iPhone 7  */
+@media screen and (device-aspect-ratio: 375/667) {
+  select,
+  textarea,
+  input[type='text'],
+  input[type='password'],
+  input[type='datetime'],
+  input[type='datetime-local'],
+  input[type='date'],
+  input[type='month'],
+  input[type='time'],
+  input[type='week'],
+  input[type='number'],
+  input[type='email'],
+  input[type='tel'],
+  input[type='url'] {
+    font-size: 16px;
+  }
+}
+
+/* Fix Input Zoom on iPhone 6 Plus, iPhone 6s Plus, iPhone 7 Plus, iPhone 8, iPhone X, XS, XS Max  */
+@media screen and (device-aspect-ratio: 9/16) {
+  select,
+  textarea,
+  input[type='text'],
+  input[type='password'],
+  input[type='datetime'],
+  input[type='datetime-local'],
+  input[type='date'],
+  input[type='month'],
+  input[type='time'],
+  input[type='week'],
+  input[type='number'],
+  input[type='email'],
+  input[type='tel'],
+  input[type='url'] {
+    font-size: 16px;
+  }
+}
+
+/* Tailwind CSS Directives - Best Practice: Order matters */
+/* 1. Base styles - resets and defaults */
+@tailwind base;
+
+/* 2. Components - reusable component classes */
+@tailwind components;
+
+/* 3. Utilities - utility classes */
+@tailwind utilities;
+
+/* Custom base layer styles */
+@layer base {
+  /* auto-sec fork: literacyseed brand @font-face declarations
+     (Poppins/SFDisplay/BEYNO/Bauhaus .ttf files) were removed — the V2 HUD is
+     monospace-first. Fonts will be reintroduced intentionally in the frontend
+     bootstrapping pass. */
+  @font-face {
+    font-family: 'Poppins';
+    src: local('Poppins');
+    font-weight: 400;
+    font-display: swap;
+  }
+
+  /* Base HTML/body styles can go here */
+  html {
+    font-family:
+      ui-monospace, 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Poppins', system-ui, sans-serif;
+  }
+}
+* {
+  min-height: 0;
+  min-width: 0;
+}
+
+:root {
+  --toastify-color-success: #f539f8;
+}
+
+
+/* Vertical scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Horizontal scrollbar */
+::-webkit-scrollbar:horizontal {
+  height: 8px;
+}
+
+/* Scrollbar thumb (the draggable part of the scrollbar) */
+::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--primary)); /* Equivalent to Tailwind's bg-rose-900 */
+  border-radius: 9999px; /* Equivalent to Tailwind's rounded-xl */
+}
+
+
+.task {
+  overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.task::-webkit-scrollbar {
+  display: none;
+}
+
+
+
+/* TODO: =================================default================================ */
+body {
+  @apply bg-surface-light;
+}
+/* html font-family lives in the @layer base block above. An unlayered
+ * rule here wins the cascade over @layer base, and the old value
+ * referenced a "Product Sans" file that was never loaded — so the
+ * browser silently fell back to its default sans. */
+.primary-gradient {
+  background: linear-gradient(
+    134.38deg,
+    #f539f8 0%,
+    #c342f9 43.55%,
+    #5356fb 104.51%
+  );
+}
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine:after {
+  content: "";
+  z-index: 1;
+  background-color: hsla(0, 0%, 100%, 0.2);
+  position: absolute;
+  top: -110%;
+  bottom: -50%;
+  width: 1.25em;
+  transform: translate3d(-1000%, 0, 0) rotate(35deg);
+}
+
+.btn-shine:hover::after {
+  transition: transform 0.45s ease-in-out;
+  transform: translate3d(500%, 0, 0) rotate(35deg);
+}
+.secondary-gradient::before {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    134.38deg,
+    #5356fb 0%,
+    #c342f9 43.55%,
+    #f539f8 104.51%
+  );
+  opacity: 30%;
+}
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.default-border-bottom {
+  border-bottom: 1px solid #d3d2fe;
+}
+.overflow-style-none::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.overflow-style-none {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.btn-gradient {
+  background: linear-gradient(
+    134.38deg,
+    #f539f8 0%,
+    #c342f9 43.55%,
+    #5356fb 104.51%
+  );
+}
+.btn-gradient:hover {
+  background: linear-gradient(
+    134.38deg,
+    #5356fb 0%,
+    #c342f9 43.55%,
+    #f539f8 104.51%
+  );
+}
+.text-26 {
+  font-size: 26px;
+  line-height: 31.54px;
+}
+.text-18 {
+  font-size: 18px;
+}
+.section-shadow {
+  box-shadow: 0px 9px 95px 0px #0000000d;
+}
+
+.text-gradient {
+  background: linear-gradient(
+    134.38deg,
+    #f539f8 0%,
+    #c342f9 43.55%,
+    #5356fb 104.51%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.border-gradient {
+  border: 1px solid transparent;
+  background: linear-gradient(to right, white, white),
+    linear-gradient(134.38deg, #f539f8 0%, #c342f9 43.55%, #5356fb 104.51%);
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+}
+.signup.btn-loader {
+  border: 3px solid hsla(180, 4%, 82%, 0.2);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* TODO: =================================default end================================ */
+/* TODO: =================================update password================================ */
+.content-wrapper.thankyou-section {
+  /* auto-sec: literacyseed decorative asset removed */
+  background-size: cover;
+  background-repeat: no-repeat;
+  transform: scale(0);
+  visibility: hidden;
+}
+.content-wrapper.thankyou-section.active {
+  transition: all 0.5s ease-in-out;
+  transform: scale(1);
+  visibility: visible;
+}
+/* #otp {
+  caret-color: transparent;
+}
+.otp-input-com .input-wrapper:focus-within {
+  border: 2px solid #5356fb;
+} */
+
+/* TODO: =================================update password end================================ */
+/* TODO: =================================layout================================ */
+
+.nft-main-wrapper-layout .nft-sidebar,
+.nft-main-wrapper-layout .nft-header-container-wrapper,
+.nft-main-wrapper-layout .largest-sidebar {
+  transition: all 0.1s cubic-bezier(0.52, 0.35, 0.7, 0.37);
+}
+
+.sidebar-logo.enter {
+  transform: scale(1);
+  width: 100%;
+}
+.sidebar-logo {
+  transform: scale(0);
+  width: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease, color 0.15s ease;
+}
+.menu-setting-items .items .item .item-content {
+  transform: scale(0);
+  transition: transform 0.18s ease, opacity 0.18s ease, color 0.15s ease;
+}
+
+.menu-setting-items .items .item .item-content.active {
+  transform: scale(1);
+  transition: transform 0.18s ease, opacity 0.18s ease, color 0.15s ease;
+}
+.menu-setting-items .heading.active {
+  opacity: 100;
+  transform: scale(1);
+  width: 100%;
+  transition: transform 0.18s ease, opacity 0.18s ease, color 0.15s ease;
+}
+.menu-setting-items .heading {
+  opacity: 0;
+  transform: scale(0);
+  width: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease, color 0.15s ease;
+}
+.signout-btn .signout-btn-content.active {
+  opacity: 100;
+  transform: scale(1);
+  width: 100%;
+  transition: transform 0.18s ease, opacity 0.18s ease, color 0.15s ease;
+}
+.signout-btn .signout-btn-content {
+  opacity: 0;
+  transform: scale(0);
+  width: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease, color 0.15s ease;
+}
+.balance-dropdown::before {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  border-right: 25px solid transparent;
+  border-left: 25px solid transparent;
+  border-bottom: 30px solid white;
+  position: absolute;
+  top: -28px;
+  left: 50%;
+}
+.notification-dropdown::before {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  border-right: 25px solid transparent;
+  border-left: 25px solid transparent;
+  border-bottom: 30px solid white;
+  position: absolute;
+  top: -28px;
+  left: 74%;
+}
+.profile-dropdown::before {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  border-right: 25px solid transparent;
+  border-left: 25px solid transparent;
+  border-bottom: 30px solid white;
+  position: absolute;
+  top: -28px;
+  left: 57%;
+}
+.search-dropdown::before {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  border-right: 25px solid transparent;
+  border-left: 25px solid transparent;
+  border-bottom: 30px solid white;
+  position: absolute;
+  top: -28px;
+  left: 25%;
+}
+.dark .profile-dropdown::before,
+.dark .notification-dropdown::before,
+.dark .balance-dropdown::before,
+.dark .search-dropdown::before {
+  border-bottom: 30px solid #1d1f2f;
+}
+
+.balance-dropdown {
+  top: 16rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0s;
+}
+.balance-dropdown.active {
+  top: 6rem;
+  opacity: 100;
+  visibility: visible;
+}
+.notification-dropdown {
+  top: 16rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0s;
+}
+.notification-dropdown.active {
+  top: 6rem;
+  opacity: 100;
+  visibility: visible;
+}
+.search-dropdown {
+  position: absolute;
+  top: 16rem;
+  opacity: 0;
+  visibility: hidden;
+  display: none;
+  pointer-events: none;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0s;
+  border-radius: 24px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 19px 11px 127px 0px #00000030;
+  left: 0;
+}
+.search-dropdown.active {
+  top: 6rem;
+  opacity: 100;
+  visibility: visible;
+  display: block;
+  pointer-events: auto;
+}
+.profile-dropdown {
+  top: 16rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0s;
+}
+.profile-dropdown.active {
+  top: 6rem;
+  opacity: 100;
+  visibility: visible;
+}
+.profile-dropdown,
+.notification-dropdown,
+.balance-dropdown,
+.search-dropdown {
+  box-shadow: 19px 11px 127px 0px #00000030;
+}
+.miniLineChart canvas {
+  height: 122px;
+}
+.menu-setting-items .nav-item.active span.item-icon {
+  @apply bg-primary text-white;
+}
+.menu-setting-items .nav-item.active span.item-content {
+  @apply text-primary;
+}
+/* TODO: =================================layout end================================ */
+/* TODO: =================================HomePage ================================ */
+.home-page-wrapper .hero-slider .slick-slider .slick-dots li {
+  margin: 0;
+}
+.home-page-wrapper
+  .hero-slider
+  .slick-slider
+  .slick-dots
+  li.slick-active
+  button {
+  background: white;
+}
+.home-page-wrapper .hero-slider .slick-slider .slick-dots li button {
+  background: none;
+  border: 1px solid white;
+  border-radius: 100%;
+  width: 8px;
+  height: 8px;
+}
+.home-page-wrapper .hero-slider .slick-slider .slick-dots li button:before {
+  content: "";
+  width: 100%;
+  height: 100%;
+}
+.trending-slider-left-btn::before {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    134.38deg,
+    #5356fb 0%,
+    #c342f9 43.55%,
+    #f539f8 104.51%
+  );
+  z-index: -1;
+  opacity: 30%;
+}
+.card-style-one .content .thumbnail {
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.card-style-one {
+  box-shadow: 0px 9px 95px 0px #0000000d;
+}
+
+.trending-products .slick-slide > div {
+  margin: 0 16px;
+}
+
+/* the parent */
+.trending-products .slick-list {
+  margin: 0 -16px;
+}
+.update-table table tr:last-child {
+  border-bottom: none;
+}
+/* TODO: =================================HomePage end================================ */
+/* TODO: =================================my wallet end================================ */
+.circle-count {
+  display: flex;
+}
+
+.circle-count .percent {
+  position: relative;
+}
+
+.circle-count svg {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  transform: rotate(-90deg);
+}
+
+.circle-count svg circle {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #f0f0f0;
+  stroke-width: 5;
+}
+
+.circle-count .number {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.circle-count .number :is(h3, span) {
+  font-weight: 700;
+  font-size: 20px;
+  color: white;
+}
+
+.circle-count .title h2 {
+  margin: 25px 0 0;
+}
+
+.circle-count:nth-child(1) svg circle:last-of-type {
+  stroke: rgba(245, 57, 248, 1);
+}
+
+.circle-count:nth-child(2) svg circle:last-of-type {
+  stroke: rgba(242, 153, 74, 1);
+}
+.circle-count:nth-child(3) svg circle:last-of-type {
+  stroke: rgba(235, 87, 87, 1);
+}
+
+.circle-count svg circle:last-of-type {
+  stroke-dasharray: 156px;
+  stroke-dashoffset: calc(156px - (156px * var(--percent)) / 100);
+}
+
+/* Animated progress ring — the stroke fills from 0 to its target
+   value on mount with a smooth ease-out curve. */
+@keyframes progress-ring-fill {
+  from {
+    stroke-dashoffset: 156px;
+  }
+}
+
+.progress-ring-animated .progress-ring-circle {
+  animation: progress-ring-fill 1s ease-out forwards;
+}
+
+/* Slight fade-up on the whole ring unit for a polished entrance. */
+@keyframes progress-ring-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.progress-ring-animated {
+  animation: progress-ring-enter 0.6s ease-out both;
+}
+
+.progress-ring-animated:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.progress-ring-animated:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.progress-ring-animated:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.recent-transaction-widget .content ul li:last-child {
+  border-bottom: none;
+}
+/* TODO: =================================my wallet end================================ */
+/* TODO: =================================upload product end================================ */
+.drop-product-upload {
+  background-color: #fafafa;
+  background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' stroke='%235356FB29' stroke-width='1' stroke-dasharray='8%2c8' stroke-dashoffset='12' stroke-linecap='square'/%3e%3c/svg%3e");
+}
+
+.drop-product-upload.highlight {
+  border: 2px dashed #5356fb;
+}
+.field-title {
+  @apply text-xl font-bold tracking-wide text-dark-gray dark:text-white;
+}
+.switch-btn {
+  transition: all 0.5s ease-in-out;
+  background-color: #878f9a;
+}
+.switch-btn.active {
+  background-color: rgb(var(--primary));
+}
+.switch-btn .inner-circle {
+  transition: all 0.5s ease-in-out;
+  transform: translate(1.5px, 1.5px);
+}
+.switch-btn.active .inner-circle {
+  transform: translate(24.5px, 1.5px);
+}
+.preview-upload-product {
+  /* auto-sec: literacyseed decorative asset removed */
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* TODO: =================================upload product end================================ */
+/* TODO: =================================setting ================================ */
+.notification-page .content-item .notifications {
+  @apply flex space-x-4 items-center;
+}
+.notification-page
+  .content-item
+  .notifications
+  .notification-page
+  .content-item
+  .notifications {
+  @apply mb-0;
+}
+.notification-setting-tab .notification-settings-items li:last-child {
+  border-bottom: none;
+}
+.faq-tab .accordion-items .accordion-item:first-child .accordion-title-bar {
+  padding-top: 0;
+}
+.faq-tab
+  .accordion-items
+  .accordion-item:last-child
+  .accordion-body
+  .accordion-body-content {
+  padding-bottom: 20px;
+}
+.faq-tab .accordion-title-bar {
+  background: #ffffff;
+  position: relative;
+  z-index: 50;
+}
+
+.faq-tab .accordion-title-bar .accordion-title-icon .vertical {
+  transition: all 0.5s ease-in-out;
+  transform: rotate(0deg);
+  visibility: hidden;
+}
+.faq-tab .accordion-title-bar .accordion-title-icon .vertical.active {
+  transition: all 0.5s ease-in-out;
+  transform: rotate(90deg);
+  visibility: visible;
+}
+.faq-tab .accordion-body {
+  transition: all 0.2s ease-in-out;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-220px);
+  overflow: hidden;
+}
+.faq-tab .accordion-body.active {
+  transition: all 0.5s ease-in-out;
+  max-height: 1444px;
+  transform: translateY(0);
+  opacity: 100;
+}
+/* TODO: =================================setting end================================= */
+/* TODO: =================================modal================================= */
+.children-element {
+  left: 50%;
+  top: 75px;
+  transform: translate(-50%, 0px);
+}
+.modal-com {
+  transition: all 0.1s ease-in-out;
+}
+/* TODO: =================================modal end================================= */
+/* TODO: =================================login ================================= */
+.btn-login {
+  width: 100%;
+  height: 58px;
+  @apply bg-primary;
+}
+.btn-login.active {
+  transition: all 0.5s ease-in-out;
+  width: 58px;
+  height: 58px;
+  @apply bg-primary;
+}
+
+/* TODO: =================================login end================================= */
+/* TODO: ================================= profile================================= */
+.nft-authprofile-wrapper .content-wrapper-profile-only .auth,
+.nft-userprofile-wrapper .content-wrapper-profile-only .auth {
+  margin-top: -120px;
+}
+
+/* TODO: =================================profile end================================= */
+/* TODO: ================================= settings================================= */
+
+/* TODO: =================================settings end================================= */
+/*
+TODO: components ===========================
+*/
+
+.drop-down-com .drop-down-content {
+  transition: all 0.5s ease-in-out;
+  opacity: 0;
+  visibility: hidden;
+  top: 150px;
+}
+.drop-down-com .drop-down-content.active {
+  opacity: 100;
+  visibility: visible;
+  top: 100%;
+}
+.product-options .drop-down-content {
+  transition: all 0.5s ease-in-out;
+  opacity: 0;
+  visibility: hidden;
+  top: 150px;
+  right: 40px;
+}
+.product-options .drop-down-content.active {
+  opacity: 100;
+  visibility: visible;
+  top: 0;
+}
+.product-two-options .drop-down-content {
+  transition: all 0.5s ease-in-out;
+  opacity: 0;
+  visibility: hidden;
+  top: 150px;
+  right: 0;
+}
+.product-two-options .drop-down-content.active {
+  opacity: 100;
+  visibility: visible;
+  top: calc(100% + 10px);
+}
+.rate-statics-dropdown {
+  transition: all 0.5s ease-in-out;
+  opacity: 0;
+  visibility: hidden;
+  top: 150px;
+  left: 0;
+}
+.rate-statics-dropdown.active {
+  opacity: 100;
+  visibility: visible;
+  top: calc(100% + 10px);
+}
+.Update-table-dropdown :is(.text-sm) {
+  @apply text-base;
+}
+
+/* dark */
+.dark .drop-product-upload {
+  background-color: #1d1f2f;
+}
+html.dark body {
+  background-image: none;
+  background-color: black;
+}
+.dark .preview-upload-product {
+  background: none;
+}
+.dark .faq-tab .accordion-title-bar {
+  background: none;
+}
+.dark .content-wrapper.thankyou-section {
+  background-image: none;
+}
+/*
+TODO: Responsive ===========================
+*/
+
+@media (prefers-color-scheme: dark) {
+  /* defaults to dark theme */
+  html.dark body {
+    background-image: none;
+    background-color: black;
+  }
+}
+@media (max-width: 1536px) {
+  .trending-products .slick-slide > div {
+    margin: 0 10px;
+  }
+}
+@media (max-width: 1280px) {
+}
+@media (max-width: 1024px) {
+  .content-wrapper.thankyou-section {
+    background-image: none;
+  }
+  .children-element {
+    left: 50%;
+    top: 65px;
+    transform: translate(-50%, 0px);
+  }
+}
+@media (max-width: 768px) {
+  .profile-dropdown::before {
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    border-right: 25px solid transparent;
+    border-left: 25px solid transparent;
+    border-bottom: 30px solid white;
+    position: absolute;
+    top: -28px;
+    left: 78%;
+  }
+  .children-element {
+    left: 0;
+    top: 0;
+    transform: none;
+  }
+}
+@media (max-width: 640px) {
+}
+@media (max-width: 426px) {
+  .nft-authprofile-wrapper .content-wrapper-profile-only .auth,
+  .nft-userprofile-wrapper .content-wrapper-profile-only .auth {
+    margin-top: -70px;
+  }
+}
+@media (max-width: 376px) {
+  .notification-page .content-item .notifications {
+    @apply block space-x-0;
+  }
+  .notification-page .content-item .notifications .icon {
+    @apply mb-2;
+  }
+}

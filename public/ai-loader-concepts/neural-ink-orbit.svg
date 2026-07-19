@@ -1,0 +1,66 @@
+<svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="orbitGradient" x1="120" y1="120" x2="680" y2="680" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f5ab5b" />
+      <stop offset="0.45" stop-color="#4a9974" />
+      <stop offset="1" stop-color="#229b70" />
+    </linearGradient>
+    <filter id="orbitGlow" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="800" height="800" fill="#0b0f12" />
+
+  <circle
+    cx="400"
+    cy="400"
+    r="230"
+    stroke="url(#orbitGradient)"
+    stroke-width="16"
+    opacity="0.8"
+    filter="url(#orbitGlow)"
+  />
+  <circle
+    cx="400"
+    cy="400"
+    r="230"
+    stroke="url(#orbitGradient)"
+    stroke-width="4"
+    opacity="0.95"
+  />
+
+  <circle
+    cx="400"
+    cy="400"
+    r="180"
+    stroke="url(#orbitGradient)"
+    stroke-width="3"
+    stroke-dasharray="2 10"
+    opacity="0.7"
+  />
+
+  <path
+    d="M 170 430 C 230 300 560 290 630 420 C 690 520 560 590 400 560 C 280 540 230 520 170 430"
+    stroke="url(#orbitGradient)"
+    stroke-width="3"
+    stroke-dasharray="1 8"
+    stroke-linecap="round"
+    opacity="0.85"
+  />
+
+  <path
+    d="M 220 360 C 280 270 520 250 600 360 C 650 430 560 520 420 510 C 320 500 260 450 220 360"
+    stroke="url(#orbitGradient)"
+    stroke-width="2"
+    stroke-dasharray="1 6"
+    stroke-linecap="round"
+    opacity="0.55"
+  />
+
+  <circle cx="400" cy="400" r="120" fill="#0b0f12" />
+</svg>

@@ -1,0 +1,27 @@
+/*
+ * HudInput field resets — remove the browser's default focus highlight and the
+ * autofill background so the field stays in the HUD's dark translucent look.
+ * (The intentional focus affordance is the wrapper's cyan hairline, not the
+ * native blue/yellow box.)
+ */
+.hud-input-field {
+  outline: none;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.hud-input-field:focus,
+.hud-input-field:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+/* Chrome/Safari autofill paints its own background + text color — override so
+   autofilled email/password keep the HUD styling. */
+.hud-input-field:-webkit-autofill,
+.hud-input-field:-webkit-autofill:hover,
+.hud-input-field:-webkit-autofill:focus,
+.hud-input-field:-webkit-autofill:active {
+  -webkit-text-fill-color: #d1d5db;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset;
+  caret-color: #d1d5db;
+  transition: background-color 9999s ease-in-out 0s;
+}

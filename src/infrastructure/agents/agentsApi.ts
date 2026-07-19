@@ -32,6 +32,11 @@ export const agentsApi = {
 
   getState: (agentId: string) => apiClient.get(`/ai/agents/${agentId}/state/`),
 
+  // Toggle risk-gated agent capabilities (e.g. {open_draft_pr: true}).
+  // Backend: PATCH /ai/agents/<agent_id>/capabilities/ -> {capabilities: {...}}
+  updateCapabilities: (agentId: string, payload: Record<string, boolean>) =>
+    apiClient.patch(`/ai/agents/${agentId}/capabilities/`, payload),
+
   pause: (agentId: string) => apiClient.post(`/ai/agents/${agentId}/pause/`),
 
   resume: (agentId: string) => apiClient.post(`/ai/agents/${agentId}/resume/`),

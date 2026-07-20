@@ -10,6 +10,7 @@
 import React from 'react';
 import { FiChevronDown } from 'react-icons/fi';
 import HexEyeLogo from './HexEyeLogo';
+import HudButton from './HudButton';
 import Loading2 from '../Utility/LoadingSpinner/Loading';
 import HudDeepRunProgress from './HudDeepRunProgress';
 import MissionContextChipV2 from './MissionContextChip';
@@ -200,15 +201,15 @@ export default function HudChatPanel({ isOpen, onClose, chat }) {
           typeof handleClearChat === 'function' &&
           !loading && (
             <div className="flex justify-center pt-2">
-              <button
-                type="button"
+              <HudButton
+                variant="ghost"
                 onClick={handleClearChat}
-                className="text-[9px] font-mono tracking-[0.12em] text-cyan-500/60 hover:text-cyan-400 transition border border-cyan-500/20 hover:border-cyan-500/40 rounded-full px-4 py-1"
+                className="!px-4 !py-1 !text-[9px]"
                 title="Clear this chat and start a fresh thread"
                 aria-label="Clear chat"
               >
                 CLEAR CHAT
-              </button>
+              </HudButton>
             </div>
           )}
         <div ref={messagesEndRef} />

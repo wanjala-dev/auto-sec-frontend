@@ -146,27 +146,45 @@
 }
 
 /* Visible chamfer line — clip-path clips the border off the diagonal top-right
-   cut, so draw the diagonal edge back in with a rotated 1px line nudged just
-   inside the clip. Matches the 10px chamfer of the toast polygon. */
+   cut. A rotated 1px pseudo-line straddles the clip boundary and gets clipped
+   to sub-pixel remnants (invisible). Instead paint a 10px corner box whose
+   "\" diagonal gradient band starts ON the cut edge and extends 2px INWARD —
+   fully inside the clip, so the diagonal renders at full strength. */
 .v2-toast-theme .Toastify__toast {
   position: relative;
 }
 .v2-toast-theme .Toastify__toast::after {
   content: '';
   position: absolute;
-  top: 0.5px;
-  left: calc(100% - 10.5px);
-  width: 14px;
-  height: 1px;
-  background: rgba(46, 219, 232, 0.45);
-  transform-origin: left top;
-  transform: rotate(45deg);
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(
+    to bottom left,
+    transparent calc(50% - 0.5px),
+    rgba(46, 219, 232, 0.65) calc(50% - 0.5px),
+    rgba(46, 219, 232, 0.65) calc(50% + 1.5px),
+    transparent calc(50% + 1.5px)
+  );
   pointer-events: none;
   z-index: 2;
 }
 .v2-toast-theme .Toastify__toast--error::after {
-  background: rgba(248, 113, 113, 0.55);
+  background: linear-gradient(
+    to bottom left,
+    transparent calc(50% - 0.5px),
+    rgba(248, 113, 113, 0.7) calc(50% - 0.5px),
+    rgba(248, 113, 113, 0.7) calc(50% + 1.5px),
+    transparent calc(50% + 1.5px)
+  );
 }
 .v2-toast-theme .Toastify__toast--success::after {
-  background: rgba(52, 211, 153, 0.55);
+  background: linear-gradient(
+    to bottom left,
+    transparent calc(50% - 0.5px),
+    rgba(52, 211, 153, 0.7) calc(50% - 0.5px),
+    rgba(52, 211, 153, 0.7) calc(50% + 1.5px),
+    transparent calc(50% + 1.5px)
+  );
 }

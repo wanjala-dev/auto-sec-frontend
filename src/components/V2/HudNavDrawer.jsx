@@ -342,11 +342,11 @@ const HudNavDrawer = ({
   // ~18px tall (text + 1px padding + 1px border); with NOTCH_D=26 the old
   // offsets let them touch — the top bar's row even overflowed 2px past
   // the notch line. Top bar: lines at y=INSET and y=INSET+NOTCH_D; row
-  // spans INSET+4 → INSET+NOTCH_D-4 (4px clearance each side). Bottom
+  // spans INSET+5 → INSET+NOTCH_D-5 (5px clearance each side). Bottom
   // bar mirrors it.
   const btnStyle = isBottom
-    ? { bottom: INSET + 16, height: NOTCH_D - 8 }
-    : { top: INSET + 4, height: NOTCH_D - 8 };
+    ? { bottom: INSET + 17, height: NOTCH_D - 10 }
+    : { top: INSET + 5, height: NOTCH_D - 10 };
 
   const drawerContent = (
     <div
@@ -458,7 +458,7 @@ const HudNavDrawer = ({
                 }}
               >
                 <span
-                  className="flex items-center gap-1 px-2 py-px"
+                  className="flex items-center gap-1 px-2 py-px leading-none"
                   style={{
                     clipPath: TAB_CLIP,
                     background: 'rgba(8,13,22,0.85)'

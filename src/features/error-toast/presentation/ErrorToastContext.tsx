@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
 import { useErrorToastPresentation } from './useErrorToastPresentation';
 import { useErrorToastProviderValue } from './useErrorToastProviderValue';
 
@@ -68,7 +65,11 @@ export default function ErrorToastContextProvider({
 
   return (
     <ErrorToastContext.Provider value={contextValue}>
-      <ToastContainer position="top-right" newestOnTop closeOnClick />
+      {/* No ToastContainer here — the single app-wide container lives in
+          src/index.jsx (v2-toast-theme). Mounting a second container without
+          a containerId corrupts react-toastify v10's registry: deleteToast
+          reads props of an undefined container and setToggle writes to an
+          undefined slot, crashing on every toast dismiss (2026-07-20). */}
       {children}
     </ErrorToastContext.Provider>
   );

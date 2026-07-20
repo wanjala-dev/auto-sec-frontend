@@ -16,6 +16,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import HexLoader from './HexLoader';
+import HudChamferLine from './HudChamferLine';
 import { useDeepRunProgress } from '../../features/ai-chat/presentation/useDeepRunProgress';
 
 const PANEL_CLIP =
@@ -182,10 +183,11 @@ const ConsoleLog = ({ events, expanded, onToggle }) => {
     <div className="space-y-1.5" data-testid="deep-run-console">
       {visibleLines.length > 0 && (
         <div
-          className="bg-black/60 border border-cyan-500/[0.08] px-2.5 py-1.5 font-mono text-[10px] leading-relaxed text-cyan-200 max-h-32 overflow-hidden"
+          className="relative bg-black/60 border border-cyan-500/[0.08] px-2.5 py-1.5 font-mono text-[10px] leading-relaxed text-cyan-200 max-h-32 overflow-hidden"
           data-testid="deep-run-console-visible"
           style={{ clipPath: PANEL_CLIP }}
         >
+          <HudChamferLine color="rgba(46,219,232,0.3)" />
           {visibleLines.map((line, index) => (
             <div key={`${index}-${line}`} className="whitespace-pre-wrap">
               {line}
@@ -208,10 +210,11 @@ const ConsoleLog = ({ events, expanded, onToggle }) => {
       )}
       {expanded && (
         <div
-          className="bg-black/80 border border-cyan-500/[0.06] px-2.5 py-1.5 font-mono text-[10px] leading-relaxed text-cyan-300/80 max-h-72 overflow-y-auto"
+          className="relative bg-black/80 border border-cyan-500/[0.06] px-2.5 py-1.5 font-mono text-[10px] leading-relaxed text-cyan-300/80 max-h-72 overflow-y-auto"
           data-testid="deep-run-console-detail"
           style={{ clipPath: PANEL_CLIP }}
         >
+          <HudChamferLine color="rgba(46,219,232,0.25)" />
           {detailLines.map((line, index) => (
             <div key={`${index}-detail`} className="whitespace-pre-wrap">
               {line}
@@ -253,10 +256,11 @@ const HudDeepRunProgress = ({ planId, workspaceId, compact = false }) => {
   if (error) {
     return (
       <div
-        className="text-[10px] font-mono text-red-300 bg-red-500/10 border border-red-400/40 px-2 py-1"
+        className="relative text-[10px] font-mono text-red-300 bg-red-500/10 border border-red-400/40 px-2 py-1"
         role="alert"
         style={{ clipPath: PANEL_CLIP }}
       >
+        <HudChamferLine color="rgba(248,113,113,0.5)" />
         PROGRESS UNAVAILABLE — {error}
       </div>
     );
@@ -278,10 +282,11 @@ const HudDeepRunProgress = ({ planId, workspaceId, compact = false }) => {
 
   return (
     <div
-      className="bg-black/40 backdrop-blur-sm border border-cyan-500/[0.12] p-2.5 space-y-2"
+      className="relative bg-black/40 backdrop-blur-sm border border-cyan-500/[0.12] p-2.5 space-y-2"
       data-testid="deep-run-progress"
       style={{ clipPath: PANEL_CLIP }}
     >
+      <HudChamferLine color="rgba(46,219,232,0.4)" />
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <StatusPill status={snapshot.status} />
@@ -322,9 +327,10 @@ const HudDeepRunProgress = ({ planId, workspaceId, compact = false }) => {
 
       {snapshot.last_error && (
         <div
-          className="text-[10px] font-mono text-red-300 bg-red-500/10 border border-red-400/30 px-2 py-1"
+          className="relative text-[10px] font-mono text-red-300 bg-red-500/10 border border-red-400/30 px-2 py-1"
           style={{ clipPath: PANEL_CLIP }}
         >
+          <HudChamferLine color="rgba(248,113,113,0.45)" />
           {snapshot.last_error}
         </div>
       )}

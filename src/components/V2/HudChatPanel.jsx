@@ -11,6 +11,7 @@ import React from 'react';
 import { FiChevronDown } from 'react-icons/fi';
 import HexEyeLogo from './HexEyeLogo';
 import HudButton from './HudButton';
+import HudChip from './HudChip';
 import Loading2 from '../Utility/LoadingSpinner/Loading';
 import HudDeepRunProgress from './HudDeepRunProgress';
 import MissionContextChipV2 from './MissionContextChip';
@@ -20,8 +21,6 @@ const HEX_CLIP = 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)';
 const PENT_CLIP = 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)';
 const BUBBLE_CLIP =
   'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%)';
-const PILL_CLIP =
-  'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))';
 
 export default function HudChatPanel({ isOpen, onClose, chat }) {
   if (!chat) return null;
@@ -96,19 +95,18 @@ export default function HudChatPanel({ isOpen, onClose, chat }) {
       {!isAgentChat && threadOptions.length > 1 && (
         <div className="flex-shrink-0 border-b border-cyan-500/[0.06] px-3 pt-2 pb-2 flex gap-1 overflow-x-auto">
           {threadOptions.map((opt) => (
-            <button
+            <HudChip
               key={opt.value}
-              type="button"
               onClick={() => handleSelectThread(opt.value)}
-              className={`flex-shrink-0 px-3 py-1 text-[9px] font-mono tracking-wider transition border ${
+              active={(conversationId || NEW_THREAD_VALUE) === opt.value}
+              className={
                 (conversationId || NEW_THREAD_VALUE) === opt.value
-                  ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'
-                  : 'border-transparent text-gray-600 hover:text-gray-400'
-              }`}
-              style={{ clipPath: PILL_CLIP }}
+                  ? 'text-cyan-400'
+                  : 'text-gray-600 hover:text-gray-400'
+              }
             >
               {opt.label}
-            </button>
+            </HudChip>
           ))}
         </div>
       )}
@@ -133,11 +131,20 @@ export default function HudChatPanel({ isOpen, onClose, chat }) {
           >
             {msg.sender === 'user' ? (
               <React.Fragment>
+                {/* Two-layer clip (HudCard pattern) — a border on the
+                    clipped element loses the diagonal; the outer layer
+                    paints the border color and the 1px inset inner layer
+                    lets it show through along the full polygon. */}
                 <div
-                  className="px-3 py-2 max-w-[75%] text-[12px] font-mono bg-cyan-500/[0.08] text-gray-300 border border-cyan-500/10"
-                  style={{ clipPath: BUBBLE_CLIP }}
+                  className="max-w-[75%] bg-cyan-500/20"
+                  style={{ clipPath: BUBBLE_CLIP, padding: 1 }}
                 >
-                  <span className="whitespace-pre-line">{msg.text}</span>
+                  <div
+                    className="px-3 py-2 text-[12px] font-mono bg-[#0a1220] text-gray-300"
+                    style={{ clipPath: BUBBLE_CLIP }}
+                  >
+                    <span className="whitespace-pre-line">{msg.text}</span>
+                  </div>
                 </div>
                 <div
                   className="w-8 h-8 flex items-center justify-center bg-cyan-500/15 text-cyan-400 text-[10px] font-mono font-bold flex-shrink-0"
@@ -160,7 +167,11 @@ export default function HudChatPanel({ isOpen, onClose, chat }) {
                       "Thinking..." rather than sitting under it. */}
                   {(msg.text && msg.text.trim().length) || !msg.planId ? (
                     <div
-                      className="px-3 py-2 text-[12px] font-mono bg-purple-500/[0.06] text-gray-300 border border-purple-500/[0.08]"
+                      className="bg-purple-500/20"
+                      style={{ clipPath: BUBBLE_CLIP, padding: 1 }}
+                    >
+                    <div
+                      className="px-3 py-2 text-[12px] font-mono bg-[#0d0a1a] text-gray-300"
                       style={{ clipPath: BUBBLE_CLIP }}
                     >
                       <span className="whitespace-pre-line">
@@ -168,6 +179,7 @@ export default function HudChatPanel({ isOpen, onClose, chat }) {
                           ? msg.text
                           : `Thinking...`}
                       </span>
+                    </div>
                     </div>
                   ) : null}
                   {msg.planId && (
@@ -225,22 +237,21 @@ export default function HudChatPanel({ isOpen, onClose, chat }) {
           </div>
           <div className="flex gap-1 flex-wrap">
             {suggestionOptions.map((opt) => (
-              <button
+              <HudChip
                 key={opt.value}
-                type="button"
-                onClick={() => {
+                                onClick={() => {
                   setActiveSuggestion(opt.value);
                   handleSend({ text: opt.value });
                 }}
-                className={`px-3 py-1 text-[9px] font-mono border transition ${
+active={activeSuggestion === opt.value}
+                className={
                   activeSuggestion === opt.value
-                    ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'
-                    : 'border-white/[0.04] text-gray-600 hover:text-cyan-400'
-                }`}
-                style={{ clipPath: PILL_CLIP }}
+                    ? 'text-cyan-400'
+                    : 'text-gray-600 hover:text-cyan-400'
+                }
               >
                 {opt.label}
-              </button>
+              </HudChip>
             ))}
           </div>
         </div>

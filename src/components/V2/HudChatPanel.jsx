@@ -201,10 +201,12 @@ export default function HudChatPanel({ isOpen, onClose, chat }) {
           typeof handleClearChat === 'function' &&
           !loading && (
             <div className="flex justify-center pt-2">
+              {/* Natural HudButton sizing — size overrides crushed the
+                  chamfer + ring until it read as a generic outline button,
+                  not the reusable HUD button. */}
               <HudButton
                 variant="ghost"
                 onClick={handleClearChat}
-                className="!px-4 !py-1 !text-[9px]"
                 title="Clear this chat and start a fresh thread"
                 aria-label="Clear chat"
               >

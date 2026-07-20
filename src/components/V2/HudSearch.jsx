@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import HexLoader from './HexLoader';
+import HudCard from './HudCard';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch } from 'react-icons/fi';
@@ -117,21 +119,21 @@ const HudSearch = ({ seedId, className = '' }) => {
             </div>
           )}
         </div>
-        {loading && (
-          <div className="h-2 w-2 border border-cyan-500/40 border-t-transparent animate-spin" />
-        )}
+        {loading && <HexLoader size={16} />}
       </div>
 
       {/* Results dropdown */}
       {open && query.length >= MIN_QUERY && (
-        <div
-          className="absolute top-full left-0 right-0 mt-1 bg-[#0a0f1a]/95 backdrop-blur-xl border border-hud-line/10 z-50 max-h-[280px] overflow-y-auto cc-scrollbar"
-          style={{ clipPath: CLIP }}
-        >
+        <div className="absolute top-full left-0 right-0 mt-1 z-50">
+          <HudCard
+            chamfer={CHAMFER}
+            surface="bg-[#0a0f1a]/95 backdrop-blur-xl"
+            bodyClassName="p-0 max-h-[280px] overflow-y-auto cc-scrollbar"
+          >
           {loading && !results && (
-            <p className="text-[9px] font-mono text-hud-dim text-center py-4">
-              SEARCHING...
-            </p>
+            <div className="flex w-full justify-center py-4">
+              <HexLoader size={36} label="SEARCHING" />
+            </div>
           )}
 
           {!loading && sections.length === 0 && (
@@ -182,6 +184,7 @@ const HudSearch = ({ seedId, className = '' }) => {
               </div>
             );
           })}
+          </HudCard>
         </div>
       )}
     </div>

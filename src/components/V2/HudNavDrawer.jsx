@@ -339,13 +339,14 @@ const HudNavDrawer = ({
   const isBottom = position === 'bottom';
 
   // Keep the chip row clear of BOTH bar lines. The chamfered chips are
-  // ~20px tall (text + padding + 1px border); with NOTCH_D=26 the old
+  // ~18px tall (text + 1px padding + 1px border); with NOTCH_D=26 the old
   // offsets let them touch — the top bar's row even overflowed 2px past
   // the notch line. Top bar: lines at y=INSET and y=INSET+NOTCH_D; row
-  // spans INSET+3 → INSET+NOTCH_D-3. Bottom bar mirrors it.
+  // spans INSET+4 → INSET+NOTCH_D-4 (4px clearance each side). Bottom
+  // bar mirrors it.
   const btnStyle = isBottom
-    ? { bottom: INSET + 14, height: NOTCH_D - 6 }
-    : { top: INSET + 3, height: NOTCH_D - 6 };
+    ? { bottom: INSET + 16, height: NOTCH_D - 8 }
+    : { top: INSET + 4, height: NOTCH_D - 8 };
 
   const drawerContent = (
     <div
@@ -457,7 +458,7 @@ const HudNavDrawer = ({
                 }}
               >
                 <span
-                  className="flex items-center gap-1 px-2 py-0.5"
+                  className="flex items-center gap-1 px-2 py-px"
                   style={{
                     clipPath: TAB_CLIP,
                     background: 'rgba(8,13,22,0.85)'

@@ -2,12 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
-import { HUD_CLIP, computeHexPanelPlacement } from './v2Constants';
+import { CHAMFER, computeHexPanelPlacement } from './v2Constants';
 import CalloutLine from './CalloutLine';
+import HudCard from './HudCard';
+import HudText from './HudText';
 
 /**
  * Slide-in panel that appears near a clicked hex node on the ring,
- * connected by an animated callout line.
+ * connected by an animated callout line. The card itself is the standard
+ * HudCard chamfered frame; placement guarantees it never covers the
+ * centre core (see computeHexPanelPlacement).
  */
 const SlideInHexPanel = ({
   activeHexPanel,
@@ -64,34 +68,50 @@ const SlideInHexPanel = ({
               y: placement.slideFrom.y
             }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="absolute z-[30] border border-hud-line/[0.1] bg-hud-surface/95 backdrop-blur-xl overflow-hidden flex flex-col"
+            className="absolute z-[30]"
             style={{
               left: placement.panelLeft,
               top: placement.panelTop,
-              width: placement.PANEL_W,
-              // Dynamic height: start at PANEL_H, grow with content, cap + scroll.
-              minHeight: placement.PANEL_H,
-              maxHeight: 'min(70vh, 520px)',
-              clipPath: HUD_CLIP
+              width: placement.PANEL_W
             }}
           >
-            {/* Title bar */}
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-cyan-500/[0.06] flex-shrink-0">
-              <span className="text-[8px] font-mono font-semibold text-cyan-500/50 tracking-[0.15em]">
-                {title || activeHexPanel.nodeId?.toUpperCase()}
-              </span>
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-gray-600 hover:text-cyan-400 transition"
+            <HudCard
+              chamfer={CHAMFER}
+              surface="bg-hud-surface/95 backdrop-blur-xl"
+              bodyClassName="p-0"
+            >
+              <div
+                className="flex flex-col overflow-hidden"
+                style={{
+                  // Dynamic height: start at PANEL_H, grow with content, cap +
+                  // scroll. panelMaxH also stops growth reaching the core.
+                  minHeight: placement.PANEL_H,
+                  maxHeight: placement.panelMaxH
+                }}
               >
-                <FiX size={10} />
-              </button>
-            </div>
-            {/* Content */}
-            <div className="flex-1 overflow-auto p-2 cc-scrollbar">
-              {children}
-            </div>
+                {/* Title bar */}
+                <div className="flex items-center justify-between px-3 py-1.5 border-b border-cyan-500/[0.06] flex-shrink-0">
+                  <HudText
+                    variant="caption"
+                    color="text-cyan-500/50"
+                    className="font-semibold tracking-[0.15em]"
+                  >
+                    {title || activeHexPanel.nodeId?.toUpperCase()}
+                  </HudText>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="text-gray-600 hover:text-cyan-400 transition"
+                  >
+                    <FiX size={10} />
+                  </button>
+                </div>
+                {/* Content */}
+                <div className="flex-1 overflow-auto p-2 cc-scrollbar">
+                  {children}
+                </div>
+              </div>
+            </HudCard>
           </motion.div>
         </React.Fragment>
       )}

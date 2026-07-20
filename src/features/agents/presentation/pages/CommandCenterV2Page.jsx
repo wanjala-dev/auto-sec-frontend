@@ -1503,26 +1503,6 @@ const CommandCenterV2 = () => {
     [activeContext, contextHexNodes]
   );
 
-  // Auto-select first hex on mount to hint that hexes are clickable
-  useEffect(() => {
-    if (contextHexNodes.length > 0 && !activeHexPanel) {
-      const first = contextHexNodes[0];
-      const angle = -Math.PI / 2; // first hex is at the top
-      const map = CONTEXT_HEX_CLICK_MAP[activeContext] || {};
-      setActiveHexPanel({
-        nodeId: first.id,
-        hexIndex: 0,
-        hexCount: contextHexNodes.length,
-        angle,
-        panelId: map[first.id] || 'moneyFlow',
-        context: activeContext,
-        color: STATUS_COLORS[first.status] || '#6B7280'
-      });
-    }
-    // Only run on first mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Context-aware left stats panel
   const contextLeftPanel = useMemo(() => {
     switch (activeContext) {

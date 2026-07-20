@@ -15,6 +15,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import HexLoader from './HexLoader';
 import { useDeepRunProgress } from '../../features/ai-chat/presentation/useDeepRunProgress';
 
 const PANEL_CLIP =
@@ -264,10 +265,13 @@ const HudDeepRunProgress = ({ planId, workspaceId, compact = false }) => {
   if (!snapshot) {
     return (
       <div
-        className="text-[10px] font-mono text-cyan-500/60 px-2 py-1 tracking-wider"
+        className="flex items-center gap-2 px-2 py-1"
         data-testid="deep-run-loading"
       >
-        {isLoading ? 'CONNECTING TO RUN…' : 'WAITING FOR RUN TO START…'}
+        <HexLoader size={28} speed={1.4} />
+        <span className="text-[10px] font-mono text-cyan-500/60 tracking-wider">
+          {isLoading ? 'CONNECTING TO RUN…' : 'WAITING FOR RUN TO START…'}
+        </span>
       </div>
     );
   }

@@ -30,7 +30,8 @@ const HudButton = ({
   disabled = false,
   className = '',
   fullWidth = false,
-  glitch = false
+  glitch = false,
+  ...rest
 }) => {
   const themeColors = THEME_COLORS[theme] || THEME_COLORS.default;
 
@@ -71,6 +72,7 @@ const HudButton = ({
         ${className}
       `}
       style={{ clipPath: CLIP }}
+      {...rest}
     >
       {showArrow && <FiChevronRight size={12} strokeWidth={3} />}
       {icon && <span className="flex items-center opacity-80">{icon}</span>}

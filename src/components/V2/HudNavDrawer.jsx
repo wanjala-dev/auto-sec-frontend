@@ -425,20 +425,39 @@ const HudNavDrawer = ({
             // Point toward where the drawer opens (down for a top bar, up for a
             // bottom bar); flip 180° while open.
             const caretPointsDown = isBottom ? isActive : !isActive;
+            // HUD tag shape — top-right + bottom-left chamfer. Two-layer clip
+            // (HudCard pattern): outer layer painted in the border color, inner
+            // content inset 1px and clipped to the same polygon, so the border
+            // stays visible along BOTH diagonals (a plain border + clip-path
+            // loses the cut edges).
+            const TAB_CLIP =
+              'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))';
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => handleClick(item.id)}
-                className="relative flex items-center gap-1 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] font-bold"
+                className="relative font-mono text-[9px] tracking-[0.15em] font-bold p-0"
                 style={{
                   color,
                   textShadow: isActive
                     ? '0 0 10px rgba(46,219,232,0.5)'
                     : 'none',
-                  transition: 'color 200ms, text-shadow 200ms'
+                  transition: 'color 200ms, text-shadow 200ms',
+                  background: isActive
+                    ? 'rgba(46,219,232,0.65)'
+                    : 'rgba(46,219,232,0.22)',
+                  clipPath: TAB_CLIP,
+                  padding: 1
                 }}
               >
+                <span
+                  className="flex items-center gap-1 px-2 py-0.5"
+                  style={{
+                    clipPath: TAB_CLIP,
+                    background: 'rgba(8,13,22,0.85)'
+                  }}
+                >
                 {item.label}
                 {hasDrawer && (
                   <span
@@ -455,18 +474,7 @@ const HudNavDrawer = ({
                     }}
                   />
                 )}
-                {isActive && (
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2"
-                    style={{
-                      ...(isBottom ? { top: -1 } : { bottom: -1 }),
-                      width: '50%',
-                      height: 1,
-                      backgroundColor: '#2EDBE8',
-                      boxShadow: '0 0 8px rgba(46,219,232,0.6)'
-                    }}
-                  />
-                )}
+                </span>
               </button>
             );
           })}

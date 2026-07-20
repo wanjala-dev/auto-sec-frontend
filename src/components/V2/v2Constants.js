@@ -427,12 +427,17 @@ export const FILE_HEX_FOLDER_MAP = {
 export function computeHexPanelPlacement(angle, containerW, containerH) {
   const PANEL_W = 300;
   const PANEL_H = 260;
-  const GAP = 0; // end dot touches the panel border
+  const EDGE = 8;
 
   const cx = containerW / 2;
   const cy = containerH / 2;
   const scale = Math.min(containerW, containerH);
   const hexR = scale * 0.38; // R.agentOrbit
+
+  // The centre core (rings, health, label) is the HUD's primary display and
+  // must never be covered. Keep the panel rect fully outside this radius:
+  // the data rings end at 0.33, the hex orbit sits at 0.38.
+  const CLEAR_R = scale * 0.34;
 
   const hexX = cx + hexR * Math.cos(angle);
   const hexY = cy + hexR * Math.sin(angle);
@@ -443,30 +448,86 @@ export function computeHexPanelPlacement(angle, containerW, containerH) {
   const isHorizontal = Math.abs(dirX) >= Math.abs(dirY);
   const calloutLen = scale * 0.12;
 
-  let endX, endY, panelLeft, panelTop, slideFrom;
+  let panelLeft, panelTop, slideFrom;
 
   if (isHorizontal) {
     // Left/right hexes — callout goes outward, panel at the end
-    endX = hexX + dirX * calloutLen;
-    endY = hexY + dirY * calloutLen;
-    panelLeft = dirX > 0 ? endX + GAP : endX - PANEL_W - GAP;
-    panelTop = endY - PANEL_H / 2;
+    const anchorX = hexX + dirX * calloutLen;
+    const anchorY = hexY + dirY * calloutLen;
+    panelLeft = dirX > 0 ? anchorX : anchorX - PANEL_W;
+    panelTop = anchorY - PANEL_H / 2;
     slideFrom = { x: dirX * 40, y: 0 };
   } else {
     // Top/bottom hexes — route the callout sideways
     // Pick the side with more room
     const goRight = hexX <= cx;
     const sideDir = goRight ? 1 : -1;
-    endX = hexX + sideDir * calloutLen;
-    endY = hexY + dirY * (calloutLen * 0.3);
-    panelLeft = goRight ? endX + GAP : endX - PANEL_W - GAP;
-    panelTop = endY - PANEL_H / 2;
+    const anchorX = hexX + sideDir * calloutLen;
+    const anchorY = hexY + dirY * (calloutLen * 0.3);
+    panelLeft = goRight ? anchorX : anchorX - PANEL_W;
+    panelTop = anchorY - PANEL_H / 2;
     slideFrom = { x: sideDir * 40, y: 0 };
   }
 
   // Clamp within container
-  panelLeft = Math.max(8, Math.min(panelLeft, containerW - PANEL_W - 8));
-  panelTop = Math.max(8, Math.min(panelTop, containerH - PANEL_H - 8));
+  const clampLeft = (v) =>
+    Math.max(EDGE, Math.min(v, containerW - PANEL_W - EDGE));
+  const clampTop = (v) =>
+    Math.max(EDGE, Math.min(v, containerH - PANEL_H - EDGE));
+  panelLeft = clampLeft(panelLeft);
+  panelTop = clampTop(panelTop);
+
+  // Signed offset from the core centre to the panel rect's nearest point
+  const nearDx = (l) => Math.max(l, Math.min(cx, l + PANEL_W)) - cx;
+  const nearDy = (t) => Math.max(t, Math.min(cy, t + PANEL_H)) - cy;
+  // Half-width of the clear circle at a given perpendicular offset
+  const chord = (d) => Math.sqrt(Math.max(0, CLEAR_R * CLEAR_R - d * d));
+
+  // If the natural placement (or the container clamp) put the rect over the
+  // core, push it back out along whichever axis resolves with the least
+  // movement while still fitting the container.
+  if (Math.hypot(nearDx(panelLeft), nearDy(panelTop)) < CLEAR_R) {
+    const pushRight = panelLeft + PANEL_W / 2 >= cx;
+    const pushDown = panelTop + PANEL_H / 2 >= cy;
+
+    const needX = chord(nearDy(panelTop));
+    const hLeft = pushRight ? cx + needX : cx - needX - PANEL_W;
+    const needY = chord(nearDx(panelLeft));
+    const vTop = pushDown ? cy + needY : cy - needY - PANEL_H;
+
+    const hFits = hLeft >= EDGE && hLeft <= containerW - PANEL_W - EDGE;
+    const vFits = vTop >= EDGE && vTop <= containerH - PANEL_H - EDGE;
+    const hMove = Math.abs(hLeft - panelLeft);
+    const vMove = Math.abs(vTop - panelTop);
+
+    if (hFits && (!vFits || hMove <= vMove)) {
+      panelLeft = hLeft;
+    } else if (vFits) {
+      panelTop = vTop;
+    } else {
+      // Container too small to fully clear the core — take the corner
+      // furthest away from it.
+      panelLeft = clampLeft(pushRight ? containerW : 0);
+      panelTop = clampTop(pushDown ? containerH : 0);
+    }
+  }
+
+  // Cap dynamic content growth so a tall panel can't grow down into the
+  // core. Only bites when the panel sits above the core within its x-range.
+  const dxFinal = Math.abs(nearDx(panelLeft));
+  let maxBottom = containerH - EDGE;
+  if (dxFinal < CLEAR_R && panelTop + PANEL_H / 2 < cy) {
+    maxBottom = Math.min(maxBottom, cy - chord(dxFinal));
+  }
+  const panelMaxH = Math.max(
+    PANEL_H,
+    Math.min(520, containerH * 0.7, maxBottom - panelTop)
+  );
+
+  // Land the callout on the panel edge nearest the hex so the line stays
+  // attached wherever the panel ends up.
+  const endX = Math.max(panelLeft, Math.min(hexX, panelLeft + PANEL_W));
+  const endY = Math.max(panelTop, Math.min(hexY, panelTop + PANEL_H));
 
   return {
     panelLeft,
@@ -477,7 +538,8 @@ export function computeHexPanelPlacement(angle, containerW, containerH) {
     endY,
     slideFrom,
     PANEL_W,
-    PANEL_H
+    PANEL_H,
+    panelMaxH
   };
 }
 

@@ -282,7 +282,13 @@ export default function useChatSession(agentContext: any) {
         feedbackCounts: m.feedback_counts || { up: 0, down: 0 },
         myFeedback: m.my_feedback || null,
         artifacts: rawArtifacts,
-        sources: rawSources
+        sources: rawSources,
+        // Provenance — which agents produced this answer. Stamped on
+        // metadata by the backend; rendered as chips under the bubble.
+        agents:
+          (m && m.metadata && Array.isArray(m.metadata.agents)
+            ? m.metadata.agents
+            : null) || []
       };
     });
   }, []);
@@ -944,7 +950,9 @@ export default function useChatSession(agentContext: any) {
             reply: replyText,
             suggestions,
             sources,
-            conversation_id
+            conversation_id,
+            message_id: liveMessageId,
+            agents: liveAgents
           } = await askSeedQuestion(queryForBackend, seedId, {
             conversationId: conversationIdForRequest,
             planId
@@ -958,7 +966,12 @@ export default function useChatSession(agentContext: any) {
                 ...copy[lastIndex],
                 text: replyText || 'I could not parse a reply.',
                 timestamp: new Date().toLocaleTimeString(),
-                sources: Array.isArray(sources) ? sources : []
+                sources: Array.isArray(sources) ? sources : [],
+                // Server-side message UUID + provenance from the
+                // response — thumbs and agent chips work on the live
+                // bubble without waiting for a thread reload.
+                id: liveMessageId || copy[lastIndex].id,
+                agents: Array.isArray(liveAgents) ? liveAgents : []
               };
             }
             return copy;

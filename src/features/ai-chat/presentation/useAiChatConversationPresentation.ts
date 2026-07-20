@@ -303,6 +303,14 @@ export const useAiChatConversationPresentation = ({
           suggestions,
           conversation_id: returnedConversationId,
           plan_id: returnedPlanId,
+          // Assistant ConversationMessage UUID + provenance agents —
+          // consumed by useChatSession to wire thumbs + agent chips
+          // onto the live bubble.
+          message_id: data?.message_id || null,
+          agents: Array.isArray(data?.agents) ? data.agents : [],
+          // RAG citations for the live bubble — was silently absent, so
+          // sources only ever appeared after a thread reload.
+          sources: Array.isArray(data?.sources) ? data.sources : [],
           isError: hasError
         };
       } catch (error) {

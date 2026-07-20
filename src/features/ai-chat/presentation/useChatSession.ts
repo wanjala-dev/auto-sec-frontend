@@ -681,7 +681,14 @@ export default function useChatSession(agentContext: any) {
         toast.warn('Only PDF uploads are supported right now.');
       }
 
-      const seedId = seed?.id || seed?.pk;
+      // Include the stored active workspace — on surfaces with no seed
+      // route (the Command Center), SeedContext is empty and a bare
+      // ``seed?.id`` left ``msg.workspaceId`` undefined, so
+      // ``useResourceStream`` silently never subscribed and the run
+      // progress stayed at "WAITING FOR RUN TO START…" forever even
+      // after the answer arrived. Same fallback as the thread-list
+      // effects above.
+      const seedId = seed?.id || seed?.pk || storedActiveSeedId;
 
       // ── PDF upload path ──
       if (pdfFiles.length > 0) {
@@ -1043,6 +1050,7 @@ export default function useChatSession(agentContext: any) {
       replaceMessage,
       seed,
       sendPdfConversationMessage,
+      storedActiveSeedId,
       uploadPdfFile
     ]
   );

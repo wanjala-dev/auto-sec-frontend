@@ -9,12 +9,11 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   FiUsers,
-  FiDollarSign,
-  FiGift,
-  FiCalendar,
-  FiTag,
-  FiLayers,
-  FiBookOpen,
+  FiShield,
+  FiCheckSquare,
+  FiCpu,
+  FiMessageSquare,
+  FiFileText,
   FiGlobe
 } from 'react-icons/fi';
 import Icons from './Icons';
@@ -23,57 +22,49 @@ import Button from '../Button/Button';
 import LoadingSpinner from '../Utility/LoadingSpinner/Loading';
 import CollapsableCard from '../Card/CollapsableCard';
 import { searchSuggestions } from '../../application/search/searchService';
-import { formatAmount } from '../../shared/money';
-import { useViewerSession } from '../../features/auth/presentation/useViewerSession';
 
 const MIN_SUGGEST_LENGTH = 2;
 const SUGGEST_LIMIT = 8;
 
 export const SECTION_DISPLAY_ORDER = [
-  'transactions',
-  'donations',
-  'events',
-  'users',
-  'products',
-  'categories',
-  'news'
+  'findings',
+  'tasks',
+  'agents',
+  'conversations',
+  'members',
+  'log_services'
 ];
 
 export const SECTION_METADATA = {
-  transactions: {
-    label: 'Transactions',
-    icon: FiDollarSign,
+  findings: {
+    label: 'Findings',
+    icon: FiShield,
+    iconBg: 'bg-red-500/15 text-red-300'
+  },
+  tasks: {
+    label: 'Tasks',
+    icon: FiCheckSquare,
     iconBg: 'bg-emerald-500/15 text-emerald-300'
   },
-  donations: {
-    label: 'Donations',
-    icon: FiGift,
-    iconBg: 'bg-pink-500/15 text-pink-300'
+  agents: {
+    label: 'Agents',
+    icon: FiCpu,
+    iconBg: 'bg-cyan-500/15 text-cyan-300'
   },
-  events: {
-    label: 'Events',
-    icon: FiCalendar,
+  conversations: {
+    label: 'Conversations',
+    icon: FiMessageSquare,
     iconBg: 'bg-indigo-500/15 text-indigo-300'
   },
-  users: {
-    label: 'People',
+  members: {
+    label: 'Members',
     icon: FiUsers,
     iconBg: 'bg-sky-500/15 text-sky-300'
   },
-  products: {
-    label: 'Products',
-    icon: FiTag,
-    iconBg: 'bg-orange-500/15 text-orange-300'
-  },
-  categories: {
-    label: 'Categories',
-    icon: FiLayers,
-    iconBg: 'bg-lime-500/15 text-lime-300'
-  },
-  news: {
-    label: 'News',
-    icon: FiBookOpen,
-    iconBg: 'bg-purple-500/15 text-purple-300'
+  log_services: {
+    label: 'Log services',
+    icon: FiFileText,
+    iconBg: 'bg-amber-500/15 text-amber-300'
   },
   default: {
     label: 'Results',
@@ -89,54 +80,24 @@ const withFocus = (base, item) => {
   return `${base}${sep}focus=${encodeURIComponent(id)}`;
 };
 
-// Destination routes use the active workspace as the seed_id, since the
-// live routes (e.g. /transactions/all/:seed_id) are workspace-scoped.
-// `focus` carries the item id so destination pages can open the specific
-// row / modal for it (pages opt in to reading `focus`).
-export const buildSectionRoute = (sectionKey, item, activeSeedId) => {
-  const seed = activeSeedId ? String(activeSeedId) : null;
-  switch (sectionKey) {
-    case 'donations':
-      return seed ? withFocus(`/donations/${seed}`, item) : '/donations';
-    case 'transactions':
-      return seed
-        ? withFocus(`/transactions/all/${seed}`, item)
-        : '/transactions';
-    case 'events':
-      return seed
-        ? withFocus(`/fundraising/events/${seed}`, item)
-        : '/fundraising/events';
-    case 'users':
-      // People search lands on the Contacts directory (the old
-      // /teams/directories surface was delinked in the nav rework).
-      return withFocus('/contacts', item);
-    case 'products':
-      if (item?.id) return `/shop/store/${item.id}`;
-      if (item?.slug) return `/shop/product/detail/${item.slug}`;
-      return '/shop';
-    case 'categories':
-      return item?.slug
-        ? `/shop?category=${encodeURIComponent(item.slug)}`
-        : '/shop';
-    case 'news':
-      return item?.url || item?.absolute_url || null;
-    default:
-      return null;
-  }
+// Every suggest item carries its destination as `item.url` (a frontend
+// route the backend resolves per section — the single-screen HUD means
+// these are `/` plus `?panel=…` deep-links). `focus` carries the item id
+// so destination panels can opt in to opening the specific row.
+export const buildSectionRoute = (sectionKey, item) => {
+  if (item?.url) return withFocus(item.url, item);
+  return item?.absolute_url || null;
 };
 
-// Legacy export kept for backwards compatibility with existing consumers
-// (e.g. SearchResultsPage). New code should call `buildSectionRoute` so
-// routes stay workspace-aware.
-export const SECTION_ROUTE_MAP = {
-  donations: (item) => buildSectionRoute('donations', item, null),
-  transactions: (item) => buildSectionRoute('transactions', item, null),
-  events: (item) => buildSectionRoute('events', item, null),
-  users: (item) => buildSectionRoute('users', item, null),
-  products: (item) => buildSectionRoute('products', item, null),
-  categories: (item) => buildSectionRoute('categories', item, null),
-  news: (item) => buildSectionRoute('news', item, null)
-};
+// Legacy export kept for backwards compatibility with existing consumers.
+// New code should call `buildSectionRoute`.
+export const SECTION_ROUTE_MAP = SECTION_DISPLAY_ORDER.reduce(
+  (map, sectionKey) => ({
+    ...map,
+    [sectionKey]: (item) => buildSectionRoute(sectionKey, item)
+  }),
+  {}
+);
 
 const firstNonEmpty = (candidates = [], fallback = '') => {
   for (const candidate of candidates) {
@@ -169,7 +130,6 @@ const SearchLoadingIndicator = () => (
 
 export default function SearchCom({ className, inputClasses }) {
   const navigate = useNavigate();
-  const { storedActiveSeedId } = useViewerSession();
   const [query, setQuery] = useState('');
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -261,9 +221,9 @@ export default function SearchCom({ className, inputClasses }) {
   const resolveResultLabel = (item, fallbackIndex = 0) =>
     firstNonEmpty(
       [
+        item?.title,
         item?.label,
         item?.name,
-        item?.title,
         item?.full_name,
         item?.username,
         item?.headline,
@@ -273,36 +233,9 @@ export default function SearchCom({ className, inputClasses }) {
       `Result ${fallbackIndex + 1}`
     );
 
-  const formatCurrency = (value, currency = 'USD') => {
-    const amount = Number(value);
-    if (!Number.isFinite(amount)) {
-      return '';
-    }
-    return formatAmount(amount, currency, { compact: amount % 1 === 0 });
-  };
-
-  const resolveResultAmount = (sectionKey, item) => {
-    if (sectionKey !== 'donations' && sectionKey !== 'transactions') {
-      return '';
-    }
-    const meta = item?.meta || {};
-    const raw = meta.amount ?? item?.amount;
-    return raw !== undefined && raw !== null && raw !== ''
-      ? formatCurrency(raw, meta.currency || item?.currency)
-      : '';
-  };
-
   const resolveResultSubLabel = (sectionKey, item) => {
     const meta = item?.meta || {};
-    if (sectionKey === 'donations' || sectionKey === 'transactions') {
-      return meta.notes || meta.status || item?.description || '';
-    }
-    if (sectionKey === 'users') {
-      return meta.email || item?.email || item?.role || '';
-    }
-    if (sectionKey === 'events') {
-      return meta.city || item?.location || item?.status || '';
-    }
+    if (item?.subtitle) return item.subtitle;
     if (meta.excerpt) return meta.excerpt;
     if (item?.summary) return item.summary;
     if (item?.description) return item.description;
@@ -310,7 +243,7 @@ export default function SearchCom({ className, inputClasses }) {
   };
 
   const handleResultClick = (sectionKey, item) => {
-    const destination = buildSectionRoute(sectionKey, item, storedActiveSeedId);
+    const destination = buildSectionRoute(sectionKey, item);
     if (destination) {
       if (/^https?:\/\//i.test(destination)) {
         window.open(destination, '_blank', 'noopener,noreferrer');
@@ -456,7 +389,6 @@ export default function SearchCom({ className, inputClasses }) {
                           section.key,
                           result
                         );
-                        const amount = resolveResultAmount(section.key, result);
                         const flattenIndex = flatResults.findIndex(
                           (entry) =>
                             entry.item === result &&
@@ -496,11 +428,6 @@ export default function SearchCom({ className, inputClasses }) {
                                   </span>
                                 ) : null}
                               </span>
-                              {amount ? (
-                                <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
-                                  {amount}
-                                </span>
-                              ) : null}
                             </button>
                           </li>
                         );

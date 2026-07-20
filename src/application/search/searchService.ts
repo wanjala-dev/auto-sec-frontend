@@ -65,19 +65,27 @@ export const searchAggregate = async ({
 export const searchSuggestions = async ({
   query,
   limit,
+  seedId = null,
   displayOrder = [],
   signal
 }: {
   query: string;
   limit: number;
+  seedId?: string | null;
   displayOrder?: string[];
   signal?: AbortSignal;
 }) => {
+  const params: Record<string, unknown> = {
+    q: query,
+    limit
+  };
+  if (seedId) {
+    // Narrow the suggest scope to the active workspace; the backend 403s
+    // workspace ids outside the requester's memberships.
+    params.workspace_id = seedId;
+  }
   const response = await searchApi.suggest(
-    {
-      q: query,
-      limit
-    },
+    params,
     signal ? { signal } : undefined
   );
 

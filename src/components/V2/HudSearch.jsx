@@ -38,10 +38,12 @@ const HudSearch = ({ seedId, className = '' }) => {
       clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
         try {
+          // Returns normalized sections: [{ key, total, results: [...] }, …]
           const data = await searchSuggestions({
             query: q,
             limit: 6,
-            seedId
+            seedId,
+            displayOrder: SECTION_DISPLAY_ORDER
           });
           setResults(data);
         } catch {
@@ -83,10 +85,9 @@ const HudSearch = ({ seedId, className = '' }) => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Group results by section
-  const sections = results
-    ? SECTION_DISPLAY_ORDER.filter((s) => results[s]?.length > 0)
-    : [];
+  // Normalized sections ([{ key, total, results }]) — already ordered and
+  // non-empty-only (normalizeSearchSections drops empty segments).
+  const sections = Array.isArray(results) ? results : [];
 
   return (
     <div className={`relative ${className}`} ref={inputRef}>
@@ -142,19 +143,19 @@ const HudSearch = ({ seedId, className = '' }) => {
             </p>
           )}
 
-          {sections.map((sectionKey) => {
-            const meta = SECTION_METADATA[sectionKey] || {};
-            const items = results[sectionKey] || [];
+          {sections.map((section) => {
+            const meta = SECTION_METADATA[section.key] || {};
+            const items = section.results || [];
             const Icon = meta.icon;
             return (
               <div
-                key={sectionKey}
+                key={section.key}
                 className="border-b border-hud-line/[0.04] last:border-0"
               >
                 <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/[0.01]">
                   {Icon && <Icon size={9} className="text-hud-dim" />}
                   <span className="text-[8px] font-mono text-hud-dim uppercase tracking-wider">
-                    {meta.label || sectionKey}
+                    {meta.label || section.key}
                   </span>
                   <span className="text-[7px] font-mono text-hud-dim ml-auto">
                     {items.length}
@@ -174,6 +175,11 @@ const HudSearch = ({ seedId, className = '' }) => {
                         item.email ||
                         '—'}
                     </span>
+                    {item.subtitle && (
+                      <span className="text-[9px] font-mono text-hud-dim/60 truncate max-w-[40%] flex-shrink-0">
+                        {item.subtitle}
+                      </span>
+                    )}
                     {item.amount && (
                       <span className="text-[9px] font-mono text-emerald-400/60 tabular-nums flex-shrink-0">
                         ${Number(item.amount).toLocaleString()}

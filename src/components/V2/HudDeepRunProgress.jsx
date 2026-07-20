@@ -187,7 +187,7 @@ const ConsoleLog = ({ events, expanded, onToggle }) => {
           data-testid="deep-run-console-visible"
           style={{ clipPath: PANEL_CLIP }}
         >
-          <HudChamferLine color="rgba(46,219,232,0.3)" />
+          <HudChamferLine color="rgba(6,182,212,0.08)" />
           {visibleLines.map((line, index) => (
             <div key={`${index}-${line}`} className="whitespace-pre-wrap">
               {line}
@@ -214,7 +214,7 @@ const ConsoleLog = ({ events, expanded, onToggle }) => {
           data-testid="deep-run-console-detail"
           style={{ clipPath: PANEL_CLIP }}
         >
-          <HudChamferLine color="rgba(46,219,232,0.25)" />
+          <HudChamferLine color="rgba(6,182,212,0.06)" />
           {detailLines.map((line, index) => (
             <div key={`${index}-detail`} className="whitespace-pre-wrap">
               {line}
@@ -260,7 +260,7 @@ const HudDeepRunProgress = ({ planId, workspaceId, compact = false }) => {
         role="alert"
         style={{ clipPath: PANEL_CLIP }}
       >
-        <HudChamferLine color="rgba(248,113,113,0.5)" />
+        <HudChamferLine color="rgba(248,113,113,0.4)" />
         PROGRESS UNAVAILABLE — {error}
       </div>
     );
@@ -286,7 +286,7 @@ const HudDeepRunProgress = ({ planId, workspaceId, compact = false }) => {
       data-testid="deep-run-progress"
       style={{ clipPath: PANEL_CLIP }}
     >
-      <HudChamferLine color="rgba(46,219,232,0.4)" />
+      <HudChamferLine color="rgba(6,182,212,0.12)" />
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <StatusPill status={snapshot.status} />
@@ -330,7 +330,7 @@ const HudDeepRunProgress = ({ planId, workspaceId, compact = false }) => {
           className="relative text-[10px] font-mono text-red-300 bg-red-500/10 border border-red-400/30 px-2 py-1"
           style={{ clipPath: PANEL_CLIP }}
         >
-          <HudChamferLine color="rgba(248,113,113,0.45)" />
+          <HudChamferLine color="rgba(248,113,113,0.3)" />
           {snapshot.last_error}
         </div>
       )}

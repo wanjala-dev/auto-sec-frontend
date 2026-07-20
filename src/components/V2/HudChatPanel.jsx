@@ -12,6 +12,7 @@ import { FiChevronDown } from 'react-icons/fi';
 import HexEyeLogo from './HexEyeLogo';
 import HudButton from './HudButton';
 import HudChip from './HudChip';
+import HudFeedbackButtons from './HudFeedbackButtons';
 import Loading2 from '../Utility/LoadingSpinner/Loading';
 import HudDeepRunProgress from './HudDeepRunProgress';
 import MissionContextChipV2 from './MissionContextChip';
@@ -191,6 +192,45 @@ export default function HudChatPanel({ isOpen, onClose, chat }) {
                   {msg.text && msg.text.trim().length > 0 && (
                     <SourcesPanelV2 sources={msg.sources} />
                   )}
+                  {/* Provenance chips — which specialists produced this
+                      answer (backend stamps metadata.agents; the live
+                      response carries the same list). */}
+                  {!msg.isWelcome &&
+                    Array.isArray(msg.agents) &&
+                    msg.agents.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-[8px] font-mono tracking-[0.15em] text-gray-600 uppercase">
+                          Agents
+                        </span>
+                        {msg.agents.map((agentSlug) => (
+                          <HudChip
+                            key={agentSlug}
+                            active
+                            className="text-cyan-400/80 uppercase !text-[8px]"
+                            title={`Handled by ${agentSlug}`}
+                          >
+                            {String(agentSlug).replace(/_/g, ' ')}
+                          </HudChip>
+                        ))}
+                      </div>
+                    )}
+                  {/* Thumbs — rate the answer; feeds the online-eval
+                      telemetry. Needs the server-side message UUID
+                      (live responses carry it; welcome/placeholder
+                      bubbles don't). */}
+                  {!msg.isWelcome &&
+                    msg.id &&
+                    msg.text &&
+                    msg.text.trim().length > 0 && (
+                      <HudFeedbackButtons
+                        conversationId={conversationId}
+                        messageId={msg.id}
+                        initialRating={msg.myFeedback || null}
+                        initialCounts={
+                          msg.feedbackCounts || { up: 0, down: 0 }
+                        }
+                      />
+                    )}
                 </div>
               </React.Fragment>
             )}

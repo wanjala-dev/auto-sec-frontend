@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import HexLoader from '../../../components/V2/HexLoader';
 import PropTypes from 'prop-types';
 
 import apiClient from '../../../infrastructure/http/apiClient';
@@ -152,7 +153,12 @@ export default function HudLogStreamContent({ variant = 'card' }) {
         <div className="max-h-[20vh] flex-1 overflow-hidden">
           <div className="flex h-full flex-col justify-end overflow-y-auto cc-scrollbar">
             {state === 'loading' && (
-              <p className="font-mono text-[8px] text-hud-dim">CONNECTING TO STREAM…</p>
+              <div className="flex items-center gap-2 py-1">
+                <HexLoader size={22} />
+                <p className="font-mono text-[8px] text-hud-dim">
+                  CONNECTING TO STREAM…
+                </p>
+              </div>
             )}
             {records.slice(-40).map((r, i) => (
               <p key={i} className="truncate font-mono text-[8px] leading-[1.5] text-hud-dim">
@@ -212,7 +218,9 @@ export default function HudLogStreamContent({ variant = 'card' }) {
       <div className="border-t border-hud-line/10">
         <div className="max-h-[62vh] overflow-y-auto cc-scrollbar pt-1">
           {state === 'loading' && (
-            <p className="font-mono text-[9px] text-hud-dim">CONNECTING TO STREAM…</p>
+            <div className="flex w-full justify-center py-6">
+              <HexLoader size={56} label="CONNECTING TO STREAM" />
+            </div>
           )}
           {records.map((r, i) => (
             <p key={i} className="truncate font-mono text-[9px] leading-[1.6] text-hud-dim">

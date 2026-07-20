@@ -20,25 +20,38 @@ import PropTypes from 'prop-types';
  *     ...
  *   </div>
  */
-const HudChamferLine = ({ size = 10, color = 'rgba(46,219,232,0.45)' }) => (
-  <span
-    aria-hidden="true"
-    style={{
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      width: size,
-      height: size,
-      pointerEvents: 'none',
-      zIndex: 2,
-      background: `linear-gradient(to bottom left, transparent calc(50% - 0.5px), ${color} calc(50% - 0.5px), ${color} calc(50% + 0.5px), transparent calc(50% + 0.5px))`
-    }}
-  />
-);
+const HudChamferLine = ({
+  size = 10,
+  color = 'rgba(46,219,232,0.45)',
+  corner = 'top-right'
+}) => {
+  // The cut edge of a top-right chamfer is the "\" diagonal of the corner
+  // box (gradient axis to bottom left); a top-left chamfer cuts along the
+  // "/" diagonal (axis to bottom right). Each band starts on the edge and
+  // extends 1px inward — fully inside the clip.
+  const isLeft = corner === 'top-left';
+  const axis = isLeft ? 'to bottom right' : 'to bottom left';
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        top: 0,
+        ...(isLeft ? { left: 0 } : { right: 0 }),
+        width: size,
+        height: size,
+        pointerEvents: 'none',
+        zIndex: 2,
+        background: `linear-gradient(${axis}, transparent calc(50% - 0.5px), ${color} calc(50% - 0.5px), ${color} calc(50% + 0.5px), transparent calc(50% + 0.5px))`
+      }}
+    />
+  );
+};
 
 HudChamferLine.propTypes = {
   size: PropTypes.number,
-  color: PropTypes.string
+  color: PropTypes.string,
+  corner: PropTypes.oneOf(['top-right', 'top-left'])
 };
 
 export default HudChamferLine;

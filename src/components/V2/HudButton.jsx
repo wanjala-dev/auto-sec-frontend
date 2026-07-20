@@ -2,6 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { FiChevronRight } from 'react-icons/fi';
 
+import HudChamferLine from './HudChamferLine';
+
 import './hudGlitch.css';
 
 /**
@@ -44,12 +46,14 @@ const HudButton = ({
     secondary: {
       bg: 'bg-[#0d1520] hover:bg-[#131d2a]',
       text: 'text-hud-dim hover:text-hud-text',
-      shadow: 'shadow-[inset_0_0_0_1px_rgba(46,219,232,0.12)]'
+      shadow: 'shadow-[inset_0_0_0_1px_rgba(46,219,232,0.12)]',
+      ring: 'rgba(46,219,232,0.12)'
     },
     ghost: {
       bg: 'bg-[#0a0f1a]/60 hover:bg-[#0d1520]',
       text: 'text-hud-dim hover:text-hud-accent',
-      shadow: 'shadow-[inset_0_0_0_1px_rgba(46,219,232,0.15)]'
+      shadow: 'shadow-[inset_0_0_0_1px_rgba(46,219,232,0.15)]',
+      ring: 'rgba(46,219,232,0.15)'
     }
   };
 
@@ -67,13 +71,19 @@ const HudButton = ({
         px-6 py-2.5
         transition-all duration-150
         disabled:opacity-40 disabled:cursor-not-allowed
-        inline-flex items-center justify-center gap-2
+        relative inline-flex items-center justify-center gap-2
         ${glitch ? 'hud-glitch-error' : ''}
         ${className}
       `}
       style={{ clipPath: CLIP }}
       {...rest}
     >
+      {/* The inset-shadow ring follows the rectangular box, so the clip
+          cuts it off along the chamfered top-left edge — draw the diagonal
+          back in at the ring's own color (primary has no ring). */}
+      {v.ring && (
+        <HudChamferLine corner="top-left" size={CHAMFER} color={v.ring} />
+      )}
       {showArrow && <FiChevronRight size={12} strokeWidth={3} />}
       {icon && <span className="flex items-center opacity-80">{icon}</span>}
       {children}

@@ -31,7 +31,7 @@ const HudChamferLine = ({ size = 10, color = 'rgba(46,219,232,0.45)' }) => (
       height: size,
       pointerEvents: 'none',
       zIndex: 2,
-      background: `linear-gradient(to bottom left, transparent calc(50% - 0.5px), ${color} calc(50% - 0.5px), ${color} calc(50% + 1px), transparent calc(50% + 1px))`
+      background: `linear-gradient(to bottom left, transparent calc(50% - 0.5px), ${color} calc(50% - 0.5px), ${color} calc(50% + 0.5px), transparent calc(50% + 0.5px))`
     }}
   />
 );

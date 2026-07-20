@@ -66,26 +66,39 @@ const HexLoader = ({ size = 96, color = '#2EDBE8', label, speed = 1 }) => {
       ctx.stroke();
       ctx.globalAlpha = 1;
 
-      // Traveling head + fading trail — one continuous direction around
-      // the perimeter, slowed to a calm sweep (2600ms per lap at
-      // speed=1; was 1600ms).
-      const head = ((performance.now() - start) / (2600 / speed)) % 1;
-      const TRAIL = 30;
+      // Fill-oscillation (indeterminate-progress style): the lit segment
+      // GROWS from the anchor around the perimeter until the hexagon is
+      // full, then DRAINS from the anchor side — so the light "fills to
+      // one side, then to the other", looping. No circulating comet.
+      const period = 2600 / speed;
+      const cycle = ((performance.now() - start) / period) % 2;
+      // Half 1: segment [0 → cycle] grows to full.
+      // Half 2: segment [cycle-1 → 1] shrinks toward the far side.
+      const t0 = cycle < 1 ? 0 : cycle - 1;
+      const t1 = cycle < 1 ? cycle : 1;
+      const STEPS = 90;
       ctx.lineCap = 'round';
-      for (let k = TRAIL; k >= 0; k--) {
-        const t = (head - k / (TRAIL * 6) + 1) % 1;
-        const p0 = pointAt(t);
-        const p1 = pointAt((t + 0.004 + 1) % 1);
-        const a = (1 - k / TRAIL) ** 2;
-        ctx.beginPath();
-        ctx.moveTo(p0.x, p0.y);
-        ctx.lineTo(p1.x, p1.y);
-        ctx.strokeStyle = color;
-        ctx.globalAlpha = a;
-        ctx.lineWidth = 2;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = k === 0 ? 10 : 4;
-        ctx.stroke();
+      const span = t1 - t0;
+      if (span > 0.001) {
+        const steps = Math.max(2, Math.ceil(span * STEPS));
+        for (let k = 0; k < steps; k++) {
+          const a0 = t0 + (span * k) / steps;
+          const a1 = t0 + (span * (k + 1)) / steps;
+          const p0 = pointAt(a0);
+          const p1 = pointAt(Math.min(a1 + 0.002, t1));
+          // Leading edge glows brightest; body settles to a solid line.
+          const leadDist = cycle < 1 ? (t1 - a0) / Math.max(span, 0.02) : (a0 - t0) / Math.max(span, 0.02);
+          const nearLead = Math.max(0, 1 - leadDist * 4);
+          ctx.beginPath();
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1.x, p1.y);
+          ctx.strokeStyle = color;
+          ctx.globalAlpha = 0.55 + 0.45 * nearLead;
+          ctx.lineWidth = 2;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 3 + 7 * nearLead;
+          ctx.stroke();
+        }
       }
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;

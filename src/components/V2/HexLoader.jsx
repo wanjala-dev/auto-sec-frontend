@@ -66,17 +66,14 @@ const HexLoader = ({ size = 96, color = '#2EDBE8', label, speed = 1 }) => {
       ctx.stroke();
       ctx.globalAlpha = 1;
 
-      // Traveling head + fading trail — ping-pong: the head sweeps the
-      // perimeter forward then reverses (side to side), rather than one
-      // continuous loop. Triangle-wave phase; the trail flips with the
-      // direction so it always streams BEHIND the head.
-      const cycle = ((performance.now() - start) / (1600 / speed)) % 2;
-      const head = cycle < 1 ? cycle : 2 - cycle;
-      const dir = cycle < 1 ? 1 : -1;
+      // Traveling head + fading trail — one continuous direction around
+      // the perimeter, slowed to a calm sweep (2600ms per lap at
+      // speed=1; was 1600ms).
+      const head = ((performance.now() - start) / (2600 / speed)) % 1;
       const TRAIL = 30;
       ctx.lineCap = 'round';
       for (let k = TRAIL; k >= 0; k--) {
-        const t = (head - (dir * k) / (TRAIL * 6) + 2) % 1;
+        const t = (head - k / (TRAIL * 6) + 1) % 1;
         const p0 = pointAt(t);
         const p1 = pointAt((t + 0.004 + 1) % 1);
         const a = (1 - k / TRAIL) ** 2;

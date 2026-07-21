@@ -15,7 +15,19 @@ const CalloutLine = ({ hexX, hexY, endX, endY, color = '#2EDBE8' }) => {
       style={{ animation: 'callout-glitch 6s ease-in-out infinite' }}
     >
       <defs>
-        <filter id="callout-glow">
+        {/* userSpaceOnUse region: the default bbox-relative filter region
+            collapses to zero for perfectly horizontal/vertical paths (the
+            side hexes' elbows), which makes the browser drop the line
+            entirely. An explicit viewport-sized region keeps it rendering
+            at every angle. */}
+        <filter
+          id="callout-glow"
+          filterUnits="userSpaceOnUse"
+          x="-5%"
+          y="-5%"
+          width="110%"
+          height="110%"
+        >
           <feGaussianBlur stdDeviation="3" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
@@ -36,22 +48,23 @@ const CalloutLine = ({ hexX, hexY, endX, endY, color = '#2EDBE8' }) => {
         style={{ animation: 'callout-ghost 6s ease-in-out infinite' }}
       />
 
-      {/* Main callout line */}
+      {/* Main callout line — strong enough to read even on the short runs
+          from the side hexes and across brighter panel chrome. */}
       <path
         d={path}
         stroke={color}
-        strokeWidth="1"
+        strokeWidth="1.5"
         fill="none"
-        opacity="0.35"
+        opacity="0.8"
         strokeDasharray="4 3"
         filter="url(#callout-glow)"
       />
 
       {/* End dot */}
-      <circle cx={endX} cy={endY} r="3.5" fill={color} opacity="0.5" />
+      <circle cx={endX} cy={endY} r="3.5" fill={color} opacity="0.9" />
 
       {/* Start dot */}
-      <circle cx={hexX} cy={hexY} r="2" fill={color} opacity="0.5" />
+      <circle cx={hexX} cy={hexY} r="2" fill={color} opacity="0.9" />
 
       <style>
         {`

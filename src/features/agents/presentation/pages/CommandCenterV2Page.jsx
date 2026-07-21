@@ -28,7 +28,6 @@ import HudVoiceModal from '../../../../components/V2/HudVoiceModal';
 import MobileGate from '../../../../components/V2/MobileGate';
 import HudNavDrawer from '../../../../components/V2/HudNavDrawer';
 import HudSideNav from '../../../../components/V2/HudSideNav';
-import HudPaymentCard from '../../../../components/V2/HudPaymentCard';
 import HudPromptQualityPanel from '../../../../components/V2/HudPromptQualityPanel';
 import HudKanbanBoard from '../../../../components/V2/kanban/HudKanbanBoard';
 import SettingsPanel from '../../../settings/presentation/SettingsPanel';
@@ -3192,27 +3191,8 @@ const CommandCenterV2 = () => {
                   </DraggablePanel>
                 )}
 
-                {/* ── Payment card panel ── */}
-                {showPanel('paymentCard') && (
-                  <DraggablePanel
-                    id="paymentCard"
-                    className="absolute left-[2%] bottom-[8%] z-30"
-                    offset={panelOffsets.paymentCard}
-                  >
-                    <div style={{ width: 260, height: 165 }}>
-                      <HudPaymentCard
-                        card={{
-                          brand: 'visa',
-                          last4: '4242',
-                          exp_month: 12,
-                          exp_year: 2027,
-                          is_default: true
-                        }}
-                        size="sm"
-                      />
-                    </div>
-                  </DraggablePanel>
-                )}
+                {/* Payment card lives in Settings ▸ Workspace ▸ Billing
+                    (card on file) — not on the operational dashboard. */}
 
                 {/* ── Prompt quality panel (Wave 4) ── */}
                 {showPanel('promptQuality') && (

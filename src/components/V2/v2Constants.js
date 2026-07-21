@@ -389,14 +389,13 @@ export const CONTEXT_PANELS = {
     'sponsorship',
     'incomeTrend',
     'events',
-    'paymentCard',
     'promptQuality',
     'logStream',
     'rightPanels'
   ],
   projects: ['leftPanels', 'campaigns', 'events', 'rightPanels'],
   files: ['leftPanels', 'fileTree', 'rightPanels'],
-  profile: ['leftPanels', 'paymentCard', 'rightPanels', 'incomeTrend']
+  profile: ['leftPanels', 'rightPanels', 'incomeTrend']
 };
 
 // Wave 4 of the prompt-evaluation plan — V2 Command Center panel

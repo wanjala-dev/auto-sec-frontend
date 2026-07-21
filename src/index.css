@@ -1207,3 +1207,11 @@ TODO: Responsive ===========================
     @apply mb-2;
   }
 }
+
+/* ── V2 HUD: user-resized draggable panels ─────────────────────────────
+   Applied by DraggablePanel when a panel has a stored size: the wrapper is
+   a fixed-height column and each card stretches to fill it. */
+.cc-panel-sized > * {
+  flex: 1 1 0%;
+  min-height: 0;
+}

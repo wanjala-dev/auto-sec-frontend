@@ -249,7 +249,16 @@ const StarField = ({ count = 140 }) => {
 };
 
 /* ── Draggable panel wrapper ── */
-const DraggablePanel = ({ id, children, className = '', offset, style }) => {
+const DraggablePanel = ({
+  id,
+  children,
+  className = '',
+  offset,
+  style,
+  size,
+  onResize,
+  onResizeCommit
+}) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id });
 
@@ -262,22 +271,86 @@ const DraggablePanel = ({ id, children, className = '', offset, style }) => {
   const ox = (offset?.x || 0) + (transform?.x || 0);
   const oy = (offset?.y || 0) + (transform?.y || 0);
 
+  // A resized panel is PINNED to the top-left position it had when the
+  // resize started (size.px/py, pre-offset). Without the pin, growing a
+  // bottom- or right-anchored panel pushes it upward/leftward — off-screen
+  // in the worst case. The pin already includes any centering translate, so
+  // centering is dropped while pinned.
+  const pinned = size && size.px != null;
+
   const parts = [];
-  if (centerX) parts.push('translateX(-50%)');
-  if (centerY) parts.push('translateY(-50%)');
+  if (centerX && !pinned) parts.push('translateX(-50%)');
+  if (centerY && !pinned) parts.push('translateY(-50%)');
   if (ox || oy) parts.push(`translate(${ox}px, ${oy}px)`);
 
   const combinedStyle = {
     ...style,
+    ...(size ? { width: size.w, height: size.h } : null),
+    ...(pinned
+      ? { left: size.px, top: size.py, right: 'auto', bottom: 'auto' }
+      : null),
     transform: parts.length ? parts.join(' ') : undefined,
     zIndex: isDragging ? 50 : undefined
+  };
+
+  // Corner drag-to-resize. Plain pointer events (no dnd-kit): the delta maps
+  // 1:1 to width/height, clamped to the centre container so a panel can't be
+  // stretched off-screen. Commit persists once on release.
+  const startResize = (e) => {
+    if (!onResize) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const el = e.currentTarget.closest('[data-panel-id]');
+    if (!el) return;
+    const startRect = el.getBoundingClientRect();
+    const hostRect = el.closest('#cc-main')?.getBoundingClientRect();
+    const sx = e.clientX;
+    const sy = e.clientY;
+    // Pin the panel where it currently sits (minus the drag offset, which
+    // stays applied as a transform) so the SE corner is what moves. When the
+    // corner reaches the container edge, the pin slides back (up/left) so
+    // the panel can keep growing until it fills the container.
+    const startLeftHost = hostRect ? startRect.left - hostRect.left : 0;
+    const startTopHost = hostRect ? startRect.top - hostRect.top : 0;
+    const offX = offset?.x || 0;
+    const offY = offset?.y || 0;
+    const move = (ev) => {
+      let w = Math.max(120, startRect.width + (ev.clientX - sx));
+      let h = Math.max(60, startRect.height + (ev.clientY - sy));
+      let leftHost = startLeftHost;
+      let topHost = startTopHost;
+      if (hostRect) {
+        w = Math.min(w, hostRect.width - 16);
+        h = Math.min(h, hostRect.height - 16);
+        leftHost = Math.max(8, Math.min(startLeftHost, hostRect.width - 8 - w));
+        topHost = Math.max(8, Math.min(startTopHost, hostRect.height - 8 - h));
+      }
+      onResize(id, {
+        w: Math.round(w),
+        h: Math.round(h),
+        px: Math.round(leftHost - offX),
+        py: Math.round(topHost - offY)
+      });
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      onResizeCommit?.();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
   };
 
   return (
     <div
       ref={setNodeRef}
       data-panel-id={id}
-      className={`${className} ${isDragging ? 'opacity-80' : ''}`}
+      className={`${className} ${
+        // A user-sized panel becomes a column and its cards stretch to fill
+        // (cc-panel-sized, index.css) — absolute-positioned handles are out
+        // of flow and unaffected.
+        size ? 'flex flex-col cc-panel-sized' : ''
+      } ${isDragging ? 'opacity-80' : ''}`}
       style={combinedStyle}
     >
       {/* Drag handle — inside the chamfer, offset from the cut corner */}
@@ -290,6 +363,22 @@ const DraggablePanel = ({ id, children, className = '', offset, style }) => {
       >
         <FiMove size={9} />
       </div>
+      {/* Resize handle — bottom-right corner bracket */}
+      {onResize && (
+        <div
+          onPointerDown={startResize}
+          className="absolute bottom-0 right-0 z-30 flex h-4 w-4 cursor-se-resize items-end justify-end p-0.5 text-hud-dim hover:text-hud-accent transition"
+          title="Drag to resize"
+        >
+          <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+            <path
+              d="M6.5 0.5 V6.5 H0.5"
+              stroke="currentColor"
+              strokeWidth="1"
+            />
+          </svg>
+        </div>
+      )}
       {children}
     </div>
   );
@@ -342,7 +431,7 @@ const HudBorderCanvas = ({ canvasRef }) => {
   return null;
 };
 
-const Hud = ({ children, className = '', title }) => {
+const Hud = ({ children, className = '', title, fill = false }) => {
   const borderRef = useRef(null);
   return (
     <div className={`relative ${className}`}>
@@ -352,7 +441,11 @@ const Hud = ({ children, className = '', title }) => {
       />
       <HudBorderCanvas canvasRef={borderRef} />
       <div
-        className="bg-black/40 backdrop-blur-sm px-3 py-2 h-full overflow-hidden"
+        className={`bg-black/40 backdrop-blur-sm px-3 py-2 h-full overflow-hidden ${
+          // fill: a user-resized panel — lay the body out as a column so a
+          // flex-1 child (list, chart) can grow with the card.
+          fill ? 'flex flex-col' : ''
+        }`}
         style={{ clipPath: HUD_CLIP }}
       >
         {title && (
@@ -1033,7 +1126,7 @@ const CoreCanvas = ({
           e.target.closest(
             'button, a, input, select, textarea, [role="button"], ' +
               '[contenteditable="true"], [data-hex-popup], ' +
-              '.cursor-pointer, .cursor-grab'
+              '.cursor-pointer, .cursor-grab, .cursor-se-resize'
           )
         ) {
           return;
@@ -1354,6 +1447,41 @@ const CommandCenterV2 = () => {
     }
   });
 
+  // User-set panel sizes (corner drag-to-resize) — persisted like offsets.
+  const [panelSizes, setPanelSizes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cc-v2-panel-sizes');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const handlePanelResize = useCallback((id, size) => {
+    setPanelSizes((prev) => ({ ...prev, [id]: size }));
+  }, []);
+
+  // Live resize keeps state only; the localStorage write happens once, on
+  // pointer release.
+  const persistPanelSizes = useCallback(() => {
+    setPanelSizes((prev) => {
+      try {
+        localStorage.setItem('cc-v2-panel-sizes', JSON.stringify(prev));
+      } catch {}
+      return prev;
+    });
+  }, []);
+
+  // Shared wiring for every resizable DraggablePanel.
+  const resizeProps = useCallback(
+    (id) => ({
+      size: panelSizes[id],
+      onResize: handlePanelResize,
+      onResizeCommit: persistPanelSizes
+    }),
+    [panelSizes, handlePanelResize, persistPanelSizes]
+  );
+
   const handleDragEnd = useCallback((event) => {
     const { active, delta } = event;
     if (!delta.x && !delta.y) return;
@@ -1400,8 +1528,10 @@ const CommandCenterV2 = () => {
 
   const resetPanelPositions = useCallback(() => {
     setPanelOffsets({});
+    setPanelSizes({});
     try {
       localStorage.removeItem('cc-v2-panel-offsets');
+      localStorage.removeItem('cc-v2-panel-sizes');
     } catch {}
   }, []);
 
@@ -2487,6 +2617,7 @@ const CommandCenterV2 = () => {
                     id="leftPanels"
                     className="absolute left-2 top-[70px] w-[200px] flex flex-col gap-1 z-20"
                     offset={panelOffsets.leftPanels}
+                    {...resizeProps('leftPanels')}
                   >
                     <Hud title={contextLeftPanel.title}>
                       {contextLeftPanel.stats.map((s) => (
@@ -2552,6 +2683,7 @@ const CommandCenterV2 = () => {
                     className="absolute z-20 w-[150px]"
                     style={ringSideAnchors.left}
                     offset={panelOffsets.campaigns}
+                    {...resizeProps('campaigns')}
                   >
                     <Hud title="OPERATIONS">
                       {[
@@ -2591,6 +2723,7 @@ const CommandCenterV2 = () => {
                     className="absolute z-20 w-[150px]"
                     style={ringSideAnchors.right}
                     offset={panelOffsets.sponsorship}
+                    {...resizeProps('sponsorship')}
                   >
                     <Hud title="RECON">
                       <S l="ACTIVE" v="18" c="#F59E0B" />
@@ -2645,6 +2778,7 @@ const CommandCenterV2 = () => {
                   id="recycleBin"
                   className="absolute right-2 bottom-2 z-20 w-[200px]"
                   offset={panelOffsets.recycleBin}
+                    {...resizeProps('recycleBin')}
                 >
                   <div
                     className="relative border border-red-500/20 bg-black/50 backdrop-blur-sm cursor-pointer"
@@ -2813,9 +2947,21 @@ const CommandCenterV2 = () => {
                     id="incomeTrend"
                     className="absolute bottom-[3%] left-1/2 -translate-x-1/2 z-20 w-[200px]"
                     offset={panelOffsets.incomeTrend}
+                    {...resizeProps('incomeTrend')}
                   >
-                    <Hud title="EVENT VOLUME">
-                      <div className="flex items-end gap-[2px] h-5">
+                    <Hud
+                      title="EVENT VOLUME"
+                      fill={!!panelSizes.incomeTrend}
+                    >
+                      <div
+                        className={
+                          // Bars use % heights, so growing the row scales
+                          // the whole chart with the resized card.
+                          panelSizes.incomeTrend
+                            ? 'flex items-end gap-[2px] flex-1 min-h-0'
+                            : 'flex items-end gap-[2px] h-5'
+                        }
+                      >
                         {[
                           35, 42, 28, 55, 48, 62, 39, 71, 45, 58, 50, 67, 44,
                           73, 52, 60, 48, 55, 63, 70
@@ -2852,6 +2998,7 @@ const CommandCenterV2 = () => {
                   id="clock"
                   className="absolute left-2 top-2 z-20 w-[150px]"
                   offset={panelOffsets.clock}
+                    {...resizeProps('clock')}
                 >
                   <Hud>
                     <p className="text-[14px] font-mono font-bold text-hud-text tabular-nums">
@@ -2879,9 +3026,19 @@ const CommandCenterV2 = () => {
                     id="logStream"
                     className="absolute left-2 bottom-[26vh] w-[240px] z-20"
                     offset={panelOffsets.logStream}
+                    {...resizeProps('logStream')}
                   >
-                    <Hud title="LOG STREAM" className="max-h-[28vh] overflow-hidden">
-                      <HudLogStreamContent />
+                    <Hud
+                      title="LOG STREAM"
+                      className={
+                        // A user-set size wins over the default height cap so
+                        // resizing actually reveals more of the tail.
+                        panelSizes.logStream
+                          ? 'min-h-0 overflow-hidden'
+                          : 'max-h-[28vh] overflow-hidden'
+                      }
+                    >
+                      <HudLogStreamContent fill={!!panelSizes.logStream} />
                     </Hud>
                   </DraggablePanel>
                 )}
@@ -2892,10 +3049,15 @@ const CommandCenterV2 = () => {
                     id="rightPanels"
                     className="absolute right-2 top-[90px] w-[210px] flex flex-col gap-1 z-20"
                     offset={panelOffsets.rightPanels}
+                    {...resizeProps('rightPanels')}
                   >
                     <Hud
                       title="ACTIVITY"
-                      className="max-h-[30vh] overflow-hidden"
+                      className={
+                        panelSizes.rightPanels
+                          ? 'min-h-0 overflow-hidden'
+                          : 'max-h-[30vh] overflow-hidden'
+                      }
                     >
                       {ACTIONS.map((a) => (
                         <Act key={a.id} {...a} />
@@ -2943,6 +3105,7 @@ const CommandCenterV2 = () => {
                   id="modules"
                   className="absolute left-2 bottom-3 z-20 w-[210px]"
                   offset={panelOffsets.modules}
+                    {...resizeProps('modules')}
                 >
                   <Hud title="MODULES">
                     <div className="grid grid-cols-4 gap-[2px]">
@@ -2969,6 +3132,7 @@ const CommandCenterV2 = () => {
                     id="events"
                     className="absolute left-[24%] bottom-[18%] z-20 w-[145px]"
                     offset={panelOffsets.events}
+                    {...resizeProps('events')}
                   >
                     <Hud title="ALERTS">
                       {[
@@ -3005,9 +3169,16 @@ const CommandCenterV2 = () => {
                     id="fileTree"
                     className="absolute right-[20%] bottom-[10%] z-20 w-[210px]"
                     offset={panelOffsets.fileTree}
+                    {...resizeProps('fileTree')}
                   >
-                    <Hud title="\\LOGS">
-                      <div className="max-h-[32vh] overflow-y-auto cc-scrollbar">
+                    <Hud title="\\LOGS" fill={!!panelSizes.fileTree}>
+                      <div
+                        className={
+                          panelSizes.fileTree
+                            ? 'flex-1 min-h-0 overflow-y-auto cc-scrollbar'
+                            : 'max-h-[32vh] overflow-y-auto cc-scrollbar'
+                        }
+                      >
                         {FILE_TREE.map((node, i) => (
                           <FileTreeNode
                             key={node.name + i}
@@ -3027,6 +3198,7 @@ const CommandCenterV2 = () => {
                     id="paymentCard"
                     className="absolute left-[2%] bottom-[8%] z-30"
                     offset={panelOffsets.paymentCard}
+                    {...resizeProps('paymentCard')}
                   >
                     <div style={{ width: 260, height: 165 }}>
                       <HudPaymentCard
@@ -3049,6 +3221,7 @@ const CommandCenterV2 = () => {
                     id="promptQuality"
                     className="absolute right-[22%] bottom-[6%] z-20 w-[260px]"
                     offset={panelOffsets.promptQuality}
+                    {...resizeProps('promptQuality')}
                   >
                     <HudPromptQualityPanel />
                   </DraggablePanel>

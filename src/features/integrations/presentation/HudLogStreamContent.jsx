@@ -33,7 +33,7 @@ const LIVE_MS = 30_000;
  * it again drops back to auto. The tail stays pinned to the newest records so
  * fresh lines visibly flow in from the bottom.
  */
-export default function HudLogStreamContent({ variant = 'card' }) {
+export default function HudLogStreamContent({ variant = 'card', fill = false }) {
   const { seed } = useSeedContext();
   const workspaceId =
     seed?.id ||
@@ -150,7 +150,13 @@ export default function HudLogStreamContent({ variant = 'card' }) {
           </span>
           {modeButton(true)}
         </div>
-        <div className="max-h-[20vh] flex-1 overflow-hidden">
+        <div
+          className={
+            // When the card is user-resized (fill), the panel's own height is
+            // the constraint — drop the default cap so the tail fills it.
+            fill ? 'min-h-0 flex-1 overflow-hidden' : 'max-h-[20vh] flex-1 overflow-hidden'
+          }
+        >
           <div className="flex h-full flex-col justify-end overflow-y-auto cc-scrollbar">
             {state === 'loading' && (
               <div className="flex items-center gap-2 py-1">
@@ -255,5 +261,6 @@ export default function HudLogStreamContent({ variant = 'card' }) {
 }
 
 HudLogStreamContent.propTypes = {
-  variant: PropTypes.oneOf(['card', 'full'])
+  variant: PropTypes.oneOf(['card', 'full']),
+  fill: PropTypes.bool
 };

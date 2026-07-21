@@ -29,6 +29,7 @@ import MobileGate from '../../../../components/V2/MobileGate';
 import HudNavDrawer from '../../../../components/V2/HudNavDrawer';
 import HudSideNav from '../../../../components/V2/HudSideNav';
 import HudPromptQualityPanel from '../../../../components/V2/HudPromptQualityPanel';
+import HudPosturePanel from '../../../../components/V2/HudPosturePanel';
 import HudKanbanBoard from '../../../../components/V2/kanban/HudKanbanBoard';
 import AiKillSwitchControl, {
   useAiKillSwitch
@@ -201,6 +202,7 @@ const PANELS = [
   { id: 'donations', label: 'THREAT HUNT', icon: '⌖' },
   { id: 'campaigns', label: 'OPERATIONS', icon: '◎' },
   { id: 'events', label: 'ALERTS', icon: '⚡' },
+  { id: 'posture', label: 'POSTURE', icon: '⬡' },
   { id: 'sponsorship', label: 'RECON', icon: '★' },
   { id: 'budget', label: 'LOG INTEL', icon: '≡' },
   { id: 'teams', label: 'SOC TEAM', icon: '⟐' },
@@ -2381,7 +2383,7 @@ const CommandCenterV2 = () => {
                     label: 'MODULES',
                     content: (
                       <div className="grid grid-cols-2 gap-[2px] p-2">
-                        {PANELS.slice(0, 12).map((p) => (
+                        {PANELS.slice(0, 13).map((p) => (
                           <button
                             key={p.id}
                             type="button"
@@ -3125,7 +3127,7 @@ const CommandCenterV2 = () => {
                 >
                   <Hud title="MODULES">
                     <div className="grid grid-cols-4 gap-[2px]">
-                      {PANELS.slice(0, 16).map((p) => (
+                      {PANELS.slice(0, 17).map((p) => (
                         <button
                           key={p.id}
                           type="button"
@@ -3568,6 +3570,24 @@ const CommandCenterV2 = () => {
                       </div>
                     )}
                   </div>
+                ) : activePanel === 'posture' ? (
+                  /* ── POSTURE panel — persona-lens (engineer/executive)
+                     security-posture dashboard: daily charts (log volume,
+                     AI cost + compounding, findings, runs), the response-KPI
+                     band table and the CTEM stage strip. Every number is
+                     action-linked: findings-shaped numbers open the KANBAN
+                     board, fleet/run/cost numbers return to the agent ring,
+                     log volume opens the LOGS module. ── */
+                  <HudPosturePanel
+                    seedId={resolvedSeedId}
+                    onNavigate={(target) => {
+                      if (target === 'kanban') setActivePanel('kanban');
+                      else if (target === 'logs') setActivePanel('documents');
+                      // 'agents' → close the overlay; the fleet ring IS the
+                      // agents surface on the single-screen HUD.
+                      else setActivePanel(null);
+                    }}
+                  />
                 ) : activePanel === 'kanban' ? (
                   /* ── KANBAN panel — SOC triage board (HUD-native, reuses V2
                      components + the shared KanbanBoardContext). Findings the

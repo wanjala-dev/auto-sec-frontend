@@ -113,7 +113,7 @@ export const useAiChatConversationPresentation = ({
     async (seedId, title = 'Seed Chat') => {
       const resolvedSeedId = resolveSeedId(seedId);
       if (!resolvedSeedId) {
-        toast.error('Please select a seed to start a conversation');
+        toast.error('Please select a workspace to start a conversation');
         return null;
       }
       try {
@@ -225,7 +225,7 @@ export const useAiChatConversationPresentation = ({
       }
       const resolvedSeedId = resolveSeedId(seedId);
       if (!resolvedSeedId) {
-        toast.error('Seed is required to chat. Please select a seed.');
+        toast.error('Workspace is required to chat. Please select a workspace.');
         return {
           reply: '',
           suggestions: [],

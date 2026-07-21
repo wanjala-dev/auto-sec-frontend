@@ -19,7 +19,7 @@ export const useAiChatPdfPresentation = ({
       if (!file) return null;
       const resolvedSeedId = resolveSeedId(seedId);
       if (!resolvedSeedId) {
-        toast.error('Select a seed before uploading a PDF.');
+        toast.error('Select a workspace before uploading a PDF.');
         return null;
       }
 
@@ -89,7 +89,7 @@ export const useAiChatPdfPresentation = ({
     async (pdfId, seedId, title = 'PDF Conversation') => {
       const resolvedSeedId = resolveSeedId(seedId);
       if (!resolvedSeedId || !pdfId) {
-        toast.error('PDF and seed are required to start a conversation.');
+        toast.error('PDF and workspace are required to start a conversation.');
         return null;
       }
       try {

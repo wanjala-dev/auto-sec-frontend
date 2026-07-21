@@ -50,7 +50,7 @@ export default function useChatSession(agentContext: any) {
   const createWelcomeMessage = useCallback(() => {
     return {
       sender: 'ai',
-      text: `Hi! I am ${assistantAlias}, your AI assistant. You can ask me about your donations, seeds, teams, or anything else!`,
+      text: `Hi! I am ${assistantAlias}, your SOC copilot. Ask me about findings, security posture, log analytics, or what the AI fleet has been doing.`,
       timestamp: new Date().toLocaleTimeString(),
       isWelcome: true
     };

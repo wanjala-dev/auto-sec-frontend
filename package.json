@@ -111,6 +111,18 @@
           "@typescript-eslint/no-explicit-any": "warn",
           "@typescript-eslint/consistent-type-imports": "warn"
         }
+      },
+      {
+        "files": [
+          "public/service-worker.js"
+        ],
+        "env": {
+          "serviceworker": true
+        },
+        "rules": {
+          "no-restricted-globals": "off",
+          "strict": "off"
+        }
       }
     ]
   },

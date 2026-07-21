@@ -4,6 +4,7 @@ import HudTabs from '../../../components/V2/HudTabs';
 import ProfileSection from './sections/ProfileSection';
 import SecuritySection from './sections/SecuritySection';
 import SessionsSection from './sections/SessionsSection';
+import NotificationsSection from './sections/NotificationsSection';
 import AuditSection from './sections/AuditSection';
 import MembersSection from './sections/MembersSection';
 import IntegrationsSection from './sections/IntegrationsSection';
@@ -26,7 +27,12 @@ const GROUPS = [
     sections: [
       { id: 'profile', label: 'PROFILE', Component: ProfileSection },
       { id: 'security', label: 'SECURITY', Component: SecuritySection },
-      { id: 'sessions', label: 'SESSIONS', Component: SessionsSection }
+      { id: 'sessions', label: 'SESSIONS', Component: SessionsSection },
+      {
+        id: 'notifications',
+        label: 'NOTIFICATIONS',
+        Component: NotificationsSection
+      }
     ]
   },
   {

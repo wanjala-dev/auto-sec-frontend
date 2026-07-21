@@ -523,10 +523,12 @@ export function computeHexPanelPlacement(angle, containerW, containerH) {
     Math.min(520, containerH * 0.7, maxBottom - panelTop)
   );
 
-  // Land the callout on the panel edge nearest the hex so the line stays
-  // attached wherever the panel ends up.
-  const endX = Math.max(panelLeft, Math.min(hexX, panelLeft + PANEL_W));
-  const endY = Math.max(panelTop, Math.min(hexY, panelTop + PANEL_H));
+  // Land the callout at the title corner of whichever edge faces the hex —
+  // the lead line points at the card's header (lunar-callout style), and the
+  // guaranteed vertical delta keeps the elbow from degenerating into a
+  // straight line.
+  const endX = hexX <= panelLeft + PANEL_W / 2 ? panelLeft : panelLeft + PANEL_W;
+  const endY = panelTop + 14;
 
   return {
     panelLeft,

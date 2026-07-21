@@ -30,6 +30,9 @@ import HudNavDrawer from '../../../../components/V2/HudNavDrawer';
 import HudSideNav from '../../../../components/V2/HudSideNav';
 import HudPromptQualityPanel from '../../../../components/V2/HudPromptQualityPanel';
 import HudKanbanBoard from '../../../../components/V2/kanban/HudKanbanBoard';
+import AiKillSwitchControl, {
+  useAiKillSwitch
+} from '../components/AiKillSwitchControl';
 import SettingsPanel from '../../../settings/presentation/SettingsPanel';
 import HudMessagingPanel from '../../../messaging/presentation/HudMessagingPanel';
 import HudSocialPanel from '../../../social/presentation/HudSocialPanel';
@@ -1296,6 +1299,12 @@ const CommandCenterV2 = () => {
   });
   const voice = useSpeechToText();
   const chat = useChatSession(null);
+  // Workspace AI kill switch — status feeds the OPERATOR control AND the
+  // chat composer's paused notice; the flip itself is owner/admin-gated.
+  const killSwitch = useAiKillSwitch(resolvedSeedId);
+  const aiPaused = killSwitch.status
+    ? !killSwitch.status.ai_teammate_enabled
+    : false;
   const mainRef = useRef(null);
 
   // Live size of the centre area — drives ring-aware default anchors for the
@@ -1593,12 +1602,13 @@ const CommandCenterV2 = () => {
   const handleChatSubmit = useCallback(
     (e) => {
       e?.preventDefault?.();
+      if (aiPaused) return;
       if (!chatInput.trim()) return;
       setChatOpen(true);
       chat.handleSend({ text: chatInput });
       setChatInput('');
     },
-    [chatInput, chat]
+    [chatInput, chat, aiPaused]
   );
 
   const fmt = (v) => {
@@ -2434,6 +2444,13 @@ const CommandCenterV2 = () => {
                             <span className="text-emerald-400">ACTIVE</span>
                           </div>
                         </div>
+                        {/* AI kill switch — PAUSE ALL AI with typed-reason
+                            confirm; state chip mirrors the workspace toggle. */}
+                        <AiKillSwitchControl
+                          status={killSwitch.status}
+                          toggling={killSwitch.toggling}
+                          onToggle={killSwitch.toggle}
+                        />
                         {/* Actions → the real settings sections */}
                         <div className="flex flex-col gap-1 border-t border-hud-line/10 pt-2">
                           {[
@@ -3369,13 +3386,23 @@ const CommandCenterV2 = () => {
                 onSubmit={handleChatSubmit}
                 className="flex-1 flex items-center relative"
               >
+                {aiPaused && (
+                  <span className="mr-3 flex-shrink-0 border border-rose-500/30 bg-rose-500/[0.06] px-1.5 py-0.5 font-mono text-[9px] tracking-wider text-rose-300/90">
+                    AI PAUSED
+                  </span>
+                )}
                 <input
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Ask Auto-Sec anything"
+                  placeholder={
+                    aiPaused
+                      ? 'AI is paused for this workspace — resume from the OPERATOR panel'
+                      : 'Ask Auto-Sec anything'
+                  }
+                  disabled={aiPaused}
                   autoFocus
-                  className="flex-1 bg-transparent border-none outline-none ring-0 focus:ring-0 focus:outline-none focus:border-none text-[13px] font-mono text-hud-text caret-cyan-500 placeholder-gray-700"
+                  className="flex-1 bg-transparent border-none outline-none ring-0 focus:ring-0 focus:outline-none focus:border-none text-[13px] font-mono text-hud-text caret-cyan-500 placeholder-gray-700 disabled:cursor-not-allowed"
                 />
                 {/* Native placeholder handles the "Ask Auto-Sec anything" text */}
                 <div className="flex items-center gap-3 flex-shrink-0">
@@ -3388,7 +3415,7 @@ const CommandCenterV2 = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={!chatInput.trim()}
+                    disabled={aiPaused || !chatInput.trim()}
                     className="text-cyan-500/30 hover:text-hud-accent disabled:text-gray-800 transition"
                   >
                     <FiSend size={16} />

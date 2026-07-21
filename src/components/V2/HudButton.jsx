@@ -18,6 +18,8 @@ const CLIP = `polygon(${CHAMFER}px 0, 100% 0, 100% 100%, 0 100%, 0 ${CHAMFER}px)
 const THEME_COLORS = {
   space: { primary: 'bg-[#5B9BD5] hover:bg-[#6AABE5]', text: 'text-[#0a1628]' },
   ocean: { primary: 'bg-[#2EDBE8] hover:bg-[#4AE5F0]', text: 'text-[#041225]' },
+  // Destructive / break-glass actions (e.g. the AI kill switch).
+  danger: { primary: 'bg-red-600 hover:bg-red-500', text: 'text-white' },
   default: { primary: 'bg-amber-500 hover:bg-amber-400', text: 'text-white' }
 };
 
@@ -94,7 +96,7 @@ const HudButton = ({
 HudButton.propTypes = {
   children: PropTypes.node,
   variant: PropTypes.oneOf(['primary', 'secondary', 'ghost']),
-  theme: PropTypes.oneOf(['space', 'ocean', 'default']),
+  theme: PropTypes.oneOf(['space', 'ocean', 'danger', 'default']),
   icon: PropTypes.node,
   showArrow: PropTypes.bool,
   onClick: PropTypes.func,

@@ -37,6 +37,20 @@ export const agentsApi = {
   updateCapabilities: (agentId: string, payload: Record<string, boolean>) =>
     apiClient.patch(`/ai/agents/${agentId}/capabilities/`, payload),
 
+  // ── Workspace AI kill switch (human-only; owner/admin-gated flip) ──
+  // Backend: GET/POST /ai/agents/kill-switch/ (components/agents kill_switch action)
+  getKillSwitch: (workspaceId: string) =>
+    apiClient.get('/ai/agents/kill-switch/', {
+      params: { workspace_id: workspaceId }
+    }),
+
+  setKillSwitch: (workspaceId: string, enabled: boolean, reason: string) =>
+    apiClient.post('/ai/agents/kill-switch/', {
+      workspace_id: workspaceId,
+      enabled,
+      reason
+    }),
+
   pause: (agentId: string) => apiClient.post(`/ai/agents/${agentId}/pause/`),
 
   resume: (agentId: string) => apiClient.post(`/ai/agents/${agentId}/resume/`),

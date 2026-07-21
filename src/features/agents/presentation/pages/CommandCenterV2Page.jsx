@@ -3198,7 +3198,6 @@ const CommandCenterV2 = () => {
                     id="paymentCard"
                     className="absolute left-[2%] bottom-[8%] z-30"
                     offset={panelOffsets.paymentCard}
-                    {...resizeProps('paymentCard')}
                   >
                     <div style={{ width: 260, height: 165 }}>
                       <HudPaymentCard

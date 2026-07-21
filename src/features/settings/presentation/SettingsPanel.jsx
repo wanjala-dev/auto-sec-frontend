@@ -7,6 +7,7 @@ import SessionsSection from './sections/SessionsSection';
 import AuditSection from './sections/AuditSection';
 import MembersSection from './sections/MembersSection';
 import IntegrationsSection from './sections/IntegrationsSection';
+import BillingSection from './sections/BillingSection';
 
 /**
  * SettingsPanel — the Settings surface as HUD panel CONTENT (rendered inside the
@@ -34,6 +35,7 @@ const GROUPS = [
     sections: [
       { id: 'members', label: 'MEMBERS', Component: MembersSection },
       { id: 'integrations', label: 'INTEGRATIONS', Component: IntegrationsSection },
+      { id: 'billing', label: 'BILLING', Component: BillingSection },
       { id: 'audit', label: 'AUDIT', Component: AuditSection }
     ]
   }

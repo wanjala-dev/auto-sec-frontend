@@ -1,29 +1,30 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { motion } from 'framer-motion';
 
 /**
  * SVG overlay that draws an elbow-routed callout line from a hex
  * node to the panel anchor point. Includes periodic glitch effect.
  */
 const CalloutLine = ({ hexX, hexY, endX, endY, color = '#2EDBE8' }) => {
-  const midX = hexX + (endX - hexX) * 0.4;
-  const path = `M ${hexX} ${hexY} L ${midX} ${hexY} L ${endX} ${endY}`;
+  // Lunar-callout elbow routing: a 45° diagonal plus one straight segment,
+  // never a plain straight line. If the horizontal run dominates, go 45°
+  // first then horizontal into the target; if the rise dominates, go
+  // vertical first then finish with the 45° into the target.
+  const run = Math.abs(endX - hexX);
+  const rise = Math.abs(endY - hexY);
+  const sx = Math.sign(endX - hexX) || 1;
+  const sy = Math.sign(endY - hexY) || 1;
+  const path =
+    run >= rise
+      ? `M ${hexX} ${hexY} L ${hexX + sx * rise} ${endY} L ${endX} ${endY}`
+      : `M ${hexX} ${hexY} L ${hexX} ${hexY + sy * (rise - run)} L ${endX} ${endY}`;
 
   return (
     <svg
       className="absolute inset-0 w-full h-full pointer-events-none z-[31]"
       style={{ animation: 'callout-glitch 6s ease-in-out infinite' }}
     >
-      <defs>
-        <filter id="callout-glow">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
       {/* Ghost line — offset, only visible during glitch. Matches the selected
           node color so the whole callout reads as that item's lead. */}
       <path
@@ -36,22 +37,42 @@ const CalloutLine = ({ hexX, hexY, endX, endY, color = '#2EDBE8' }) => {
         style={{ animation: 'callout-ghost 6s ease-in-out infinite' }}
       />
 
-      {/* Main callout line */}
-      <path
+      {/* Main callout line — draws out from the hex on open, retracts on
+          close (pathLength). Strong enough to read even on the short runs
+          from the side hexes and across brighter panel chrome. */}
+      <motion.path
         d={path}
         stroke={color}
-        strokeWidth="1"
+        strokeWidth="1.5"
         fill="none"
-        opacity="0.35"
-        strokeDasharray="4 3"
-        filter="url(#callout-glow)"
+        opacity="0.8"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        exit={{ pathLength: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
       />
 
-      {/* End dot */}
-      <circle cx={endX} cy={endY} r="3.5" fill={color} opacity="0.5" />
+      {/* End dot — lands once the line arrives */}
+      <motion.circle
+        cx={endX}
+        cy={endY}
+        r="3.5"
+        fill={color}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.9, transition: { delay: 0.3, duration: 0.15 } }}
+        exit={{ opacity: 0, transition: { duration: 0.1 } }}
+      />
 
       {/* Start dot */}
-      <circle cx={hexX} cy={hexY} r="2" fill={color} opacity="0.5" />
+      <motion.circle
+        cx={hexX}
+        cy={hexY}
+        r="2"
+        fill={color}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.9, transition: { duration: 0.15 } }}
+        exit={{ opacity: 0, transition: { duration: 0.15 } }}
+      />
 
       <style>
         {`

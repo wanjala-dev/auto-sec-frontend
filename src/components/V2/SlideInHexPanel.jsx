@@ -68,6 +68,7 @@ const SlideInHexPanel = ({
               y: placement.slideFrom.y
             }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            data-hex-popup
             className="absolute z-[30]"
             style={{
               left: placement.panelLeft,

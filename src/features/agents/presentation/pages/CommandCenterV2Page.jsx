@@ -249,7 +249,7 @@ const StarField = ({ count = 140 }) => {
 };
 
 /* ── Draggable panel wrapper ── */
-const DraggablePanel = ({ id, children, className = '', offset }) => {
+const DraggablePanel = ({ id, children, className = '', offset, style }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id });
 
@@ -268,6 +268,7 @@ const DraggablePanel = ({ id, children, className = '', offset }) => {
   if (ox || oy) parts.push(`translate(${ox}px, ${oy}px)`);
 
   const combinedStyle = {
+    ...style,
     transform: parts.length ? parts.join(' ') : undefined,
     zIndex: isDragging ? 50 : undefined
   };
@@ -1002,7 +1003,11 @@ const CoreCanvas = ({
 
     frameRef.current = requestAnimationFrame(draw);
 
-    // Click handler for hexagons
+    // Click handler for hexagons — registered on the CONTAINER in capture
+    // phase so hexes stay clickable even when a floating panel drifts (or is
+    // dragged) over the ring. Plain clicks over a hex go to the hex; clicks
+    // on a panel's interactive controls are never hijacked.
+    const clickHost = canvas.parentElement;
     const handleClick = (e) => {
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
@@ -1013,23 +1018,39 @@ const CoreCanvas = ({
       const cy = ch / 2;
       const sc = Math.min(cw, ch);
 
-      agents.forEach((a, i) => {
+      const hit = agents.find((a, i) => {
         const angle = (i / agents.length) * Math.PI * 2 - Math.PI / 2;
         const ax = cx + sc * R.agentOrbit * Math.cos(angle);
         const ay = cy + sc * R.agentOrbit * Math.sin(angle);
-        const dist = Math.sqrt((mx - ax) ** 2 + (my - ay) ** 2);
-        if (dist < sc * 0.03) {
-          onHexClick?.(a.id);
-        }
+        return Math.sqrt((mx - ax) ** 2 + (my - ay) ** 2) < sc * 0.03;
       });
+      if (!hit) return;
+
+      if (e.target !== canvas && e.target instanceof Element) {
+        // Something floats over this hex. Steal only inert clicks — leave
+        // controls, links, the hex popup itself, and drag handles alone.
+        if (
+          e.target.closest(
+            'button, a, input, select, textarea, [role="button"], ' +
+              '[contenteditable="true"], [data-hex-popup], ' +
+              '.cursor-pointer, .cursor-grab'
+          )
+        ) {
+          return;
+        }
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      onHexClick?.(hit.id);
     };
 
-    canvas.addEventListener('click', handleClick);
+    clickHost?.addEventListener('click', handleClick, true);
 
     return () => {
       cancelAnimationFrame(frameRef.current);
       ro.disconnect();
-      canvas.removeEventListener('click', handleClick);
+      clickHost?.removeEventListener('click', handleClick, true);
     };
   }, [agents, healthPct, onHexClick, containerRef]);
 
@@ -1184,6 +1205,46 @@ const CommandCenterV2 = () => {
   const voice = useSpeechToText();
   const chat = useChatSession(null);
   const mainRef = useRef(null);
+
+  // Live size of the centre area — drives ring-aware default anchors for the
+  // floating side panels so their resting position never covers the core ring.
+  const [mainDims, setMainDims] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return undefined;
+    const update = () => setMainDims({ w: el.clientWidth, h: el.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Default anchors for the OPERATIONS / RECON side panels: just outside the
+  // ring's outer ticks (0.44 × min-dimension — see CoreCanvas R). The centre
+  // assembly is the HUD's primary display; nothing may rest on top of it
+  // (single-screen rule). Clamped only toward the container edge, so the
+  // clamp can never push a panel back over the ring.
+  const ringSideAnchors = useMemo(() => {
+    if (!mainDims.w || !mainDims.h) return null;
+    const ringR = 0.44 * Math.min(mainDims.w, mainDims.h);
+    const cx = mainDims.w / 2;
+    const PANEL_W = 150;
+    const GAP = 12;
+    const top = Math.round(mainDims.h * 0.24);
+    return {
+      left: {
+        left: Math.max(8, Math.round(cx - ringR - GAP - PANEL_W)),
+        top
+      },
+      right: {
+        left: Math.min(
+          mainDims.w - PANEL_W - 8,
+          Math.round(cx + ringR + GAP)
+        ),
+        top
+      }
+    };
+  }, [mainDims.w, mainDims.h]);
 
   // Deep-link a panel open via ?panel=<id> (e.g. /?panel=settings). Stays on
   // the single HUD route "/" — the panel floats over the command center, we
@@ -1554,25 +1615,6 @@ const CommandCenterV2 = () => {
     }
   }, [activeContext, activeCount, agentList, agentCtx, actionList]);
 
-  // Panel route mapping for navigation
-  const panelRoutes = useMemo(
-    () => ({
-      donations: `/donations/${resolvedSeedId}`,
-      campaigns: `/campaigns/${resolvedSeedId}`,
-      events: `/fundraising/events/${resolvedSeedId}`,
-      sponsorship: `/sponsorship/${resolvedSeedId}`,
-      budget: `/budget/dashboard/${resolvedSeedId}`,
-      teams: `/team/${resolvedSeedId}`,
-      tasks: `/projects/${resolvedSeedId}`,
-      workflows: `/workflows/${resolvedSeedId}`,
-      income: `/transactions/income/${resolvedSeedId}`,
-      expenses: `/transactions/expenses/${resolvedSeedId}`,
-      reports: `/finance/reports/${resolvedSeedId}`,
-      marketplace: `/shop/${resolvedSeedId}`
-    }),
-    [resolvedSeedId]
-  );
-
   // Content renderer for slide-in hex panels
   const renderHexPanelContent = useCallback(
     (hexPanel) => {
@@ -1762,10 +1804,15 @@ const CommandCenterV2 = () => {
                   />
                 </div>
               )}
-              {panelRoutes[panelId] && (
+              {panelId && (
                 <button
                   type="button"
-                  onClick={() => navigate(panelRoutes[panelId])}
+                  onClick={() => {
+                    // Single-screen rule: "full" view is the drawer overlay,
+                    // never a route away from the HUD.
+                    setActiveHexPanel(null);
+                    setActivePanel(panelId);
+                  }}
                   className="text-[8px] font-mono text-hud-dim hover:text-hud-accent transition mt-2 border border-hud-line/10 px-2 py-1 w-full text-center"
                 >
                   OPEN FULL →
@@ -1812,10 +1859,15 @@ const CommandCenterV2 = () => {
                 </span>
               </div>
               <S l="COUNT" v={item.tasks} c="#2EDBE8" />
-              {panelRoutes[panelId] && (
+              {panelId && (
                 <button
                   type="button"
-                  onClick={() => navigate(panelRoutes[panelId])}
+                  onClick={() => {
+                    // Single-screen rule: "full" view is the drawer overlay,
+                    // never a route away from the HUD.
+                    setActiveHexPanel(null);
+                    setActivePanel(panelId);
+                  }}
                   className="text-[8px] font-mono text-hud-dim hover:text-hud-accent transition mt-2 border border-hud-line/10 px-2 py-1 w-full text-center"
                 >
                   OPEN FULL →
@@ -1839,8 +1891,6 @@ const CommandCenterV2 = () => {
     },
     [
       contextHexNodes,
-      panelRoutes,
-      navigate,
       logErrorRecords,
       alertFindings,
       activeAgentSessions,
@@ -2495,11 +2545,12 @@ const CommandCenterV2 = () => {
                   </DraggablePanel>
                 )}
 
-                {/* ── CENTER-LEFT: Campaigns callout ── */}
-                {showPanel('campaigns') && (
+                {/* ── CENTER-LEFT: Campaigns callout — anchored clear of the ring ── */}
+                {showPanel('campaigns') && ringSideAnchors && (
                   <DraggablePanel
                     id="campaigns"
-                    className="absolute left-[22%] top-[24%] z-20 w-[150px]"
+                    className="absolute z-20 w-[150px]"
+                    style={ringSideAnchors.left}
                     offset={panelOffsets.campaigns}
                   >
                     <Hud title="OPERATIONS">
@@ -2533,11 +2584,12 @@ const CommandCenterV2 = () => {
                   </DraggablePanel>
                 )}
 
-                {/* ── CENTER-RIGHT: Sponsorship callout ── */}
-                {showPanel('sponsorship') && (
+                {/* ── CENTER-RIGHT: Sponsorship callout — anchored clear of the ring ── */}
+                {showPanel('sponsorship') && ringSideAnchors && (
                   <DraggablePanel
                     id="sponsorship"
-                    className="absolute right-[22%] top-[24%] z-20 w-[150px]"
+                    className="absolute z-20 w-[150px]"
+                    style={ringSideAnchors.right}
                     offset={panelOffsets.sponsorship}
                   >
                     <Hud title="RECON">
@@ -3217,15 +3269,6 @@ const CommandCenterV2 = () => {
                     activePanel.toUpperCase()}
                 </span>
                 <div className="flex items-center gap-2">
-                  {panelRoutes[activePanel] && (
-                    <HudButton
-                      variant="ghost"
-                      onClick={() => navigate(panelRoutes[activePanel])}
-                      className="!text-[8px] !px-3 !py-1"
-                    >
-                      OPEN FULL →
-                    </HudButton>
-                  )}
                   <button
                     type="button"
                     onClick={() => setActivePanel(null)}
@@ -3451,16 +3494,8 @@ const CommandCenterV2 = () => {
                       'MODULE'
                     }
                     subtitle="UNDER CONSTRUCTION"
-                    message="This module is being built for the V2 command center. You can access it in the current interface."
+                    message="This module is being built for the V2 command center."
                     variant="info"
-                    action={
-                      panelRoutes[activePanel]
-                        ? {
-                            label: 'OPEN IN V1 →',
-                            onClick: () => navigate(panelRoutes[activePanel])
-                          }
-                        : undefined
-                    }
                     className="h-full"
                   />
                 )}

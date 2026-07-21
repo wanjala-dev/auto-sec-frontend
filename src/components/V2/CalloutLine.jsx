@@ -25,28 +25,6 @@ const CalloutLine = ({ hexX, hexY, endX, endY, color = '#2EDBE8' }) => {
       className="absolute inset-0 w-full h-full pointer-events-none z-[31]"
       style={{ animation: 'callout-glitch 6s ease-in-out infinite' }}
     >
-      <defs>
-        {/* userSpaceOnUse region: the default bbox-relative filter region
-            collapses to zero for perfectly horizontal/vertical paths (the
-            side hexes' elbows), which makes the browser drop the line
-            entirely. An explicit viewport-sized region keeps it rendering
-            at every angle. */}
-        <filter
-          id="callout-glow"
-          filterUnits="userSpaceOnUse"
-          x="-5%"
-          y="-5%"
-          width="110%"
-          height="110%"
-        >
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
       {/* Ghost line — offset, only visible during glitch. Matches the selected
           node color so the whole callout reads as that item's lead. */}
       <path
@@ -68,7 +46,6 @@ const CalloutLine = ({ hexX, hexY, endX, endY, color = '#2EDBE8' }) => {
         strokeWidth="1.5"
         fill="none"
         opacity="0.8"
-        filter="url(#callout-glow)"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
         exit={{ pathLength: 0 }}

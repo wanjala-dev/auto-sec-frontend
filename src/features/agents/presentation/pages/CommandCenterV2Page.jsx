@@ -30,6 +30,7 @@ import HudNavDrawer from '../../../../components/V2/HudNavDrawer';
 import HudSideNav from '../../../../components/V2/HudSideNav';
 import HudPromptQualityPanel from '../../../../components/V2/HudPromptQualityPanel';
 import HudPosturePanel from '../../../../components/V2/HudPosturePanel';
+import HudReportsPanel from '../../../../components/V2/HudReportsPanel';
 import HudKanbanBoard from '../../../../components/V2/kanban/HudKanbanBoard';
 import AiKillSwitchControl, {
   useAiKillSwitch
@@ -2340,6 +2341,17 @@ const CommandCenterV2 = () => {
                             else setActivePanel(null);
                           }}
                         />
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  id: 'reports',
+                  label: 'REPORTS',
+                  content: (
+                    <div className="flex w-full justify-center">
+                      <div className="max-h-[80vh] w-[80vw] overflow-y-auto cc-scrollbar">
+                        <HudReportsPanel seedId={resolvedSeedId} />
                       </div>
                     </div>
                   )

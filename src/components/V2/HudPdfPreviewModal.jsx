@@ -22,15 +22,20 @@ const PDF_OPTIONS = {
 };
 
 /**
- * HudPdfPreviewModal — full-height in-HUD PDF preview for a report.
+ * HudPdfPreviewModal — full-height in-HUD PDF preview.
  *
- * Fetches the PDF as a blob through the authed download endpoint with
- * ``?inline=1`` (unlocks preview for generated drafts; axios follows the
- * 302->presigned redirect), renders EVERY page stacked in a scrollable body so
- * you can scroll the whole document, and tracks the page currently in view for
- * the Page N / M indicator + prev/next controls. HUD-styled, react-icons.
+ * Two modes:
+ *  - ``report`` — a report row: fetches the report download endpoint with
+ *    ``?inline=1`` (unlocks generated drafts; axios follows the 302->presigned).
+ *  - ``file`` — any library file ``{ title, url }``: blob-fetches ``url``
+ *    directly (same authed same-origin path; report rows in the library carry
+ *    an inline download url so they work here too).
+ *
+ * Renders EVERY page stacked in a scrollable body so you can scroll the whole
+ * document, and tracks the page currently in view for the Page N / M indicator
+ * + prev/next controls. HUD-styled, react-icons.
  */
-export default function HudPdfPreviewModal({ report, seedId, onClose }) {
+export default function HudPdfPreviewModal({ report = null, file = null, seedId = undefined, onClose }) {
   const [blobUrl, setBlobUrl] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,16 +46,31 @@ export default function HudPdfPreviewModal({ report, seedId, onClose }) {
   const scrollRef = useRef(null);
   const pageRefs = useRef({});
 
-  // Fetch the PDF bytes once, as a blob. ``inline: 1`` unlocks generated drafts.
+  // Title + subtitle differ by mode.
+  const heading = (file?.title || report?.title || 'DOCUMENT').toUpperCase();
+  const subheading = file
+    ? file.subtitle || 'PREVIEW'
+    : report?.status === 'approved'
+      ? 'APPROVED'
+      : 'DRAFT PREVIEW';
+
+  // The fetch request differs by mode: a report goes through the download
+  // endpoint (inline=1); a library file blob-fetches its own url.
+  const reportId = report?.id;
+  const fileUrl = file?.url;
+
+  // Fetch the PDF bytes once, as a blob.
   useEffect(() => {
     let active = true;
     setState('loading');
     setMessage('');
-    apiClient
-      .get(`/report/${report.id}/download/`, {
-        params: { workspace: seedId, inline: 1 },
-        responseType: 'blob'
-      })
+    const req = fileUrl
+      ? apiClient.get(fileUrl, { responseType: 'blob' })
+      : apiClient.get(`/report/${reportId}/download/`, {
+          params: { workspace: seedId, inline: 1 },
+          responseType: 'blob'
+        });
+    req
       .then((res) => {
         if (!active) return;
         const blob = new Blob([res.data], { type: 'application/pdf' });
@@ -61,9 +81,7 @@ export default function HudPdfPreviewModal({ report, seedId, onClose }) {
       .catch((err) => {
         if (!active) return;
         setState('error');
-        setMessage(
-          err?.response?.data?.detail || 'Unable to load the report PDF.'
-        );
+        setMessage(err?.response?.data?.detail || 'Unable to load the PDF.');
       });
     return () => {
       active = false;
@@ -72,7 +90,7 @@ export default function HudPdfPreviewModal({ report, seedId, onClose }) {
         blobUrlRef.current = null;
       }
     };
-  }, [report.id, seedId]);
+  }, [reportId, fileUrl, seedId]);
 
   // Fit the page width to the modal (capped for readability).
   useEffect(() => {
@@ -142,10 +160,10 @@ export default function HudPdfPreviewModal({ report, seedId, onClose }) {
         <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-hud-line/10 px-4 py-2">
           <div className="min-w-0">
             <p className="truncate font-mono text-[11px] tracking-[0.14em] text-hud-accent">
-              {(report.title || 'REPORT').toUpperCase()}
+              {heading}
             </p>
             <p className="font-mono text-[8px] uppercase tracking-[0.2em] text-hud-dim">
-              {report.status === 'approved' ? 'APPROVED' : 'DRAFT PREVIEW'}
+              {subheading}
             </p>
           </div>
           <button
@@ -262,11 +280,17 @@ export default function HudPdfPreviewModal({ report, seedId, onClose }) {
 }
 
 HudPdfPreviewModal.propTypes = {
+  // One of `report` or `file` must be provided.
   report: PropTypes.shape({
     id: PropTypes.string,
     title: PropTypes.string,
     status: PropTypes.string
-  }).isRequired,
+  }),
+  file: PropTypes.shape({
+    title: PropTypes.string,
+    subtitle: PropTypes.string,
+    url: PropTypes.string
+  }),
   seedId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onClose: PropTypes.func.isRequired
 };

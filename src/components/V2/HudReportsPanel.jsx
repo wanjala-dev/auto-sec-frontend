@@ -10,6 +10,8 @@ import HudButton from './HudButton';
 import HudCard from './HudCard';
 import HudChip from './HudChip';
 import HudSelect from './HudSelect';
+import { FiEye } from 'react-icons/fi';
+import HudPdfPreviewModal from './HudPdfPreviewModal';
 
 /**
  * Reports surface — a kind picker (pentest today), a Generate action, a list of
@@ -80,6 +82,7 @@ export default function HudReportsPanel({ seedId }) {
   const [approvingId, setApprovingId] = useState('');
   const [downloadingId, setDownloadingId] = useState('');
   const [error, setError] = useState('');
+  const [previewReport, setPreviewReport] = useState(null);
 
   // ── Load kinds once ──
   useEffect(() => {
@@ -284,6 +287,17 @@ export default function HudReportsPanel({ seedId }) {
                   {report.status.toUpperCase()}
                 </HudChip>
 
+                {report.status === 'generated' ||
+                report.status === 'approved' ? (
+                  <HudButton
+                    variant="ghost"
+                    onClick={() => setPreviewReport(report)}
+                  >
+                    <FiEye size={13} />
+                    PREVIEW
+                  </HudButton>
+                ) : null}
+
                 {report.status === 'generated' && canApprove ? (
                   <HudButton
                     variant="secondary"
@@ -308,6 +322,14 @@ export default function HudReportsPanel({ seedId }) {
           })}
         </div>
       )}
+
+      {previewReport ? (
+        <HudPdfPreviewModal
+          report={previewReport}
+          seedId={seedId}
+          onClose={() => setPreviewReport(null)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import HudButton from './HudButton';
 import HudCard from './HudCard';
 import HudChip from './HudChip';
 import HudSelect from './HudSelect';
+import { FiEye } from 'react-icons/fi';
 import HudPdfPreviewModal from './HudPdfPreviewModal';
 
 /**
@@ -292,7 +293,8 @@ export default function HudReportsPanel({ seedId }) {
                     variant="ghost"
                     onClick={() => setPreviewReport(report)}
                   >
-                    👁 PREVIEW
+                    <FiEye size={13} />
+                    PREVIEW
                   </HudButton>
                 ) : null}
 

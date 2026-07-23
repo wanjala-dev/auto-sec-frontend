@@ -3,7 +3,7 @@ import HexLoader from './HexLoader';
 import HudCard from './HudCard';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch } from 'react-icons/fi';
+import { FiSearch, FiZap, FiChevronRight } from 'react-icons/fi';
 import { searchSuggestions } from '../../application/search/searchService';
 import { SECTION_DISPLAY_ORDER, SECTION_METADATA } from '../Helpers/SearchCom';
 
@@ -11,11 +11,23 @@ const CHAMFER = 14;
 const CLIP = `polygon(0 0, calc(100% - ${CHAMFER}px) 0, 100% ${CHAMFER}px, 100% 100%, 0 100%)`;
 const MIN_QUERY = 2;
 
+// Severity band → score-badge colour (mirrors the report/CVSS band palette).
+// The backend suggests an indicative CVSS score per finding; the badge makes a
+// critical/high finding jump out of the omnibox like a SOC search's score chip.
+const SEV_BADGE = {
+  critical: 'bg-[#b00020] text-white',
+  high: 'bg-[#c2410c] text-white',
+  medium: 'bg-[#b7791f] text-black',
+  low: 'bg-[#2f7d32] text-white'
+};
+
 /**
  * V2 HUD Search — terminal-style search with blinking cursor.
- * Dropdown results appear in a chamfered box below.
+ * Dropdown results appear in a chamfered box below: an optional "ask AI" row,
+ * then results grouped by SOC section (findings carry a severity score badge),
+ * each section with a "see all" deep-link.
  */
-const HudSearch = ({ seedId, className = '' }) => {
+const HudSearch = ({ seedId, className = '', onAskAi = null }) => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
@@ -74,6 +86,14 @@ const HudSearch = ({ seedId, className = '' }) => {
     [navigate]
   );
 
+  const handleAskAi = useCallback(() => {
+    const q = query.trim();
+    if (!q || !onAskAi) return;
+    onAskAi(q);
+    setOpen(false);
+    setQuery('');
+  }, [query, onAskAi]);
+
   // Close on click outside
   useEffect(() => {
     const handler = (e) => {
@@ -129,8 +149,25 @@ const HudSearch = ({ seedId, className = '' }) => {
           <HudCard
             chamfer={CHAMFER}
             surface="bg-[#0a0f1a]/95 backdrop-blur-xl"
-            bodyClassName="p-0 max-h-[280px] overflow-y-auto cc-scrollbar"
+            bodyClassName="p-0 max-h-[320px] overflow-y-auto cc-scrollbar"
           >
+          {/* Ask-AI row — route the raw query into the SOC copilot */}
+          {onAskAi && (
+            <button
+              type="button"
+              onClick={handleAskAi}
+              className="w-full text-left px-2.5 py-2 hover:bg-cyan-500/[0.06] transition flex items-center gap-2 border-b border-hud-line/[0.06]"
+            >
+              <FiZap size={11} className="text-hud-accent flex-shrink-0" />
+              <span className="text-[10px] font-mono text-hud-accent truncate">
+                Ask AI about
+              </span>
+              <span className="text-[10px] font-mono text-hud-dim truncate flex-1">
+                “{query.trim()}”
+              </span>
+            </button>
+          )}
+
           {loading && !results && (
             <div className="flex w-full justify-center py-4">
               <HexLoader size={36} label="SEARCHING" />
@@ -147,6 +184,8 @@ const HudSearch = ({ seedId, className = '' }) => {
             const meta = SECTION_METADATA[section.key] || {};
             const items = section.results || [];
             const Icon = meta.icon;
+            const total = section.total ?? items.length;
+            const seeAllUrl = items[0]?.url;
             return (
               <div
                 key={section.key}
@@ -158,7 +197,7 @@ const HudSearch = ({ seedId, className = '' }) => {
                     {meta.label || section.key}
                   </span>
                   <span className="text-[7px] font-mono text-hud-dim ml-auto">
-                    {items.length}
+                    {total}
                   </span>
                 </div>
                 {items.map((item, i) => (
@@ -176,17 +215,35 @@ const HudSearch = ({ seedId, className = '' }) => {
                         '—'}
                     </span>
                     {item.subtitle && (
-                      <span className="text-[9px] font-mono text-hud-dim/60 truncate max-w-[40%] flex-shrink-0">
+                      <span className="text-[9px] font-mono text-hud-dim/60 truncate max-w-[35%] flex-shrink-0">
                         {item.subtitle}
                       </span>
                     )}
-                    {item.amount && (
-                      <span className="text-[9px] font-mono text-emerald-400/60 tabular-nums flex-shrink-0">
-                        ${Number(item.amount).toLocaleString()}
+                    {/* Severity score badge (findings only) */}
+                    {item.severity && item.score != null && (
+                      <span
+                        className={`flex-shrink-0 px-1.5 py-0.5 text-[9px] font-mono font-bold tabular-nums ${
+                          SEV_BADGE[item.severity] || 'bg-hud-line/20 text-hud-dim'
+                        }`}
+                      >
+                        {Number(item.score).toFixed(1)}
                       </span>
                     )}
                   </button>
                 ))}
+                {/* See all matching <section> */}
+                {seeAllUrl && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelect({ url: seeAllUrl })}
+                    className="w-full text-left px-2.5 py-1 hover:bg-cyan-500/[0.04] transition flex items-center gap-1.5 text-hud-dim/70 hover:text-hud-accent"
+                  >
+                    <FiChevronRight size={9} className="flex-shrink-0" />
+                    <span className="text-[8px] font-mono uppercase tracking-wider">
+                      See all matching {meta.label || section.key}
+                    </span>
+                  </button>
+                )}
               </div>
             );
           })}
@@ -199,7 +256,8 @@ const HudSearch = ({ seedId, className = '' }) => {
 
 HudSearch.propTypes = {
   seedId: PropTypes.string,
-  className: PropTypes.string
+  className: PropTypes.string,
+  onAskAi: PropTypes.func
 };
 
 export default HudSearch;

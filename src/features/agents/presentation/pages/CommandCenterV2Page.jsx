@@ -2216,7 +2216,14 @@ const CommandCenterV2 = () => {
 
               {/* Center: search bar — full width */}
               <div className="flex-1 px-4">
-                <HudSearch seedId={resolvedSeedId} />
+                <HudSearch
+                  seedId={resolvedSeedId}
+                  onAskAi={(q) => {
+                    if (aiPaused) return;
+                    setChatOpen(true);
+                    chat.handleSend({ text: q });
+                  }}
+                />
               </div>
 
               {/* Right: status + controls */}

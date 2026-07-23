@@ -31,6 +31,7 @@ import HudSideNav from '../../../../components/V2/HudSideNav';
 import HudPromptQualityPanel from '../../../../components/V2/HudPromptQualityPanel';
 import HudPosturePanel from '../../../../components/V2/HudPosturePanel';
 import HudReportsPanel from '../../../../components/V2/HudReportsPanel';
+import HudFilesPanel from '../../../../components/V2/HudFilesPanel';
 import HudKanbanBoard from '../../../../components/V2/kanban/HudKanbanBoard';
 import AiKillSwitchControl, {
   useAiKillSwitch
@@ -3371,8 +3372,10 @@ const CommandCenterV2 = () => {
                   id: 'files',
                   label: 'FILES',
                   content: (
-                    <div className="p-4 text-[10px] font-mono text-hud-dim">
-                      Files panel
+                    <div className="flex w-full justify-center">
+                      <div className="max-h-[82vh] w-[84vw] overflow-y-auto cc-scrollbar">
+                        <HudFilesPanel seedId={resolvedSeedId} />
+                      </div>
                     </div>
                   )
                 }
